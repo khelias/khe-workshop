@@ -1,0 +1,51 @@
+{
+  "id": "capsule-tower",
+  "title": { "et": "Kapslitorn", "en": "Capsule tower" },
+  "summary": {
+    "et": "Pöörlev torn kohvikapslitele: kuus rida, igas viis kapslit.",
+    "en": "A rotating tower for coffee capsules: six rows of five."
+  },
+  "story": {
+    "et": "Kapslid lähevad reale ülevalt sisse ja tulevad alt välja. Foolium jääb väljapoole, nii et iga rea kohv on näha.",
+    "en": "Capsules drop into a row from the top and come out at the bottom. The foil faces outward, so each row shows its coffee."
+  },
+  "licence": "CC-BY-4.0",
+  "credit": null,
+  "source": "capsule-tower.scad",
+  "published": false,
+  "proof": null,
+  "exports": [
+    { "id": "tower", "file": "capsule-tower.stl", "defines": { "mode": "tower" }, "title": { "et": "Torn", "en": "Tower" } },
+    { "id": "base", "file": "capsule-tower-base.stl", "defines": { "mode": "base" }, "title": { "et": "Alus", "en": "Base" } }
+  ],
+  "stage_export": "tower",
+  "allowed_nonmanifold_edges": 0,
+  "replay": {
+    "last_layer": 1238,
+    "note": {
+      "et": "Kordus on päris prinditöö kuni kihini 1238. Viimased neli kihti olid pere oma tempel, nii et need on siit välja jäetud ja nende asemel on avalik tempel.",
+      "en": "The replay is the real print up to layer 1238. The last four layers were the family's own stamp, so they are left out and the public stamp appears instead."
+    }
+  },
+  "probes": {
+    "variants": [
+      { "id": "rim-44", "label": { "et": "Serv 44 mm", "en": "44 mm rim" }, "defines": { "cap_rim": 44, "cap_body": 39.5, "cap_h": 26.6 } },
+      { "id": "rim-44-8", "label": { "et": "Serv 44,8 mm", "en": "44.8 mm rim" }, "defines": { "cap_rim": 44.8, "cap_body": 39.5, "cap_h": 26.6 } },
+      { "id": "rim-45-5", "label": { "et": "Serv 45,5 mm", "en": "45.5 mm rim" }, "defines": { "cap_rim": 45.5, "cap_body": 39.5, "cap_h": 26.6 } },
+      { "id": "k-fee", "label": { "et": "K-fee, serv 45,4 mm", "en": "K-fee, 45.4 mm rim" }, "defines": { "cap_rim": 45.4, "cap_body": 38.8, "cap_h": 27.6 } }
+    ],
+    "checks": [
+      { "id": "side-clearance", "label": { "et": "Küljel on vähemalt 0,3 mm vaba ruumi", "en": "At least 0.3 mm of side clearance" }, "defines": { "mode": "clearance" }, "expect": "value", "log_key": "side_clearance", "min": 0.3 },
+      { "id": "rest", "label": { "et": "Viis kapslit mahub ritta", "en": "Five capsules fit a row" }, "defines": { "mode": "rest" }, "expect": "clear" },
+      { "id": "load", "label": { "et": "Kapsel kukub ülevalt sisse", "en": "A capsule drops in from the top" }, "defines": { "mode": "load" }, "expect": "clear" },
+      { "id": "held-1", "label": { "et": "Alumine kapsel püsib 1 mm tõmbel", "en": "Bottom capsule holds under a 1 mm pull" }, "defines": { "mode": "retain", "pull": 1 }, "expect": "contact" },
+      { "id": "held-2", "label": { "et": "Alumine kapsel püsib 2 mm tõmbel", "en": "Bottom capsule holds under a 2 mm pull" }, "defines": { "mode": "retain", "pull": 2 }, "expect": "contact" },
+      { "id": "held-upper-1", "label": { "et": "Teine kapsel püsib 1 mm tõmbel", "en": "Second capsule holds under a 1 mm pull" }, "defines": { "mode": "retain2", "pull": 1 }, "expect": "contact" },
+      { "id": "held-upper-2", "label": { "et": "Teine kapsel püsib 2 mm tõmbel", "en": "Second capsule holds under a 2 mm pull" }, "defines": { "mode": "retain2", "pull": 2 }, "expect": "contact" },
+      { "id": "lift-7", "label": { "et": "Tõuseb 7 mm", "en": "Lifts 7 mm" }, "defines": { "mode": "lift", "lift": 7 }, "expect": "clear" },
+      { "id": "out-7", "label": { "et": "Tuleb välja 7 mm tõstest", "en": "Comes out after a 7 mm lift" }, "defines": { "mode": "pull", "lift": 7 }, "expect": "clear" },
+      { "id": "lift-10", "label": { "et": "Tõuseb 10 mm", "en": "Lifts 10 mm" }, "defines": { "mode": "lift", "lift": 10 }, "expect": "clear" },
+      { "id": "out-10", "label": { "et": "Tuleb välja 10 mm tõstest", "en": "Comes out after a 10 mm lift" }, "defines": { "mode": "pull", "lift": 10 }, "expect": "clear" }
+    ]
+  }
+}
