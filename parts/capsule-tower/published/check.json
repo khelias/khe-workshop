@@ -1,0 +1,466 @@
+{
+ "id": "capsule-tower",
+ "openscad": "2026.10.11",
+ "exports": [
+  {
+   "id": "tower",
+   "file": "capsule-tower.stl",
+   "triangles": 8850,
+   "size_mm": [
+    162.508,
+    144.2,
+    248.4
+   ],
+   "volume_cm3": 1512.0,
+   "nonmanifold_edges": 0,
+   "sha256": "1bb6ddeb0aea93b046f5d1302120c2572f661b4bf313064dfd3f921d1c1cecc2"
+  },
+  {
+   "id": "base",
+   "file": "capsule-tower-base.stl",
+   "triangles": 3960,
+   "size_mm": [
+    176.0,
+    176.0,
+    42.0
+   ],
+   "volume_cm3": 253.3,
+   "nonmanifold_edges": 0,
+   "sha256": "238fe7a6f3f6ce52b3db6bc7cb6719ac16173279daf462d315a9f522c59a93d8"
+  }
+ ],
+ "probes": [
+  {
+   "id": "rim-44",
+   "label": {
+    "et": "Serv 44 mm",
+    "en": "44 mm rim"
+   },
+   "checks": [
+    {
+     "id": "side-clearance",
+     "label": {
+      "et": "Küljel on vähemalt 0,3 mm vaba ruumi",
+      "en": "At least 0.3 mm of side clearance"
+     },
+     "passed": true,
+     "value": 1.35
+    },
+    {
+     "id": "rest",
+     "label": {
+      "et": "Viis kapslit mahub ritta",
+      "en": "Five capsules fit a row"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "load",
+     "label": {
+      "et": "Kapsel kukub ülevalt sisse",
+      "en": "A capsule drops in from the top"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "held-1",
+     "label": {
+      "et": "Alumine kapsel ei tule 1 mm tõmbega välja",
+      "en": "Bottom capsule holds under a 1 mm pull"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "held-2",
+     "label": {
+      "et": "Alumine kapsel ei tule 2 mm tõmbega välja",
+      "en": "Bottom capsule holds under a 2 mm pull"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "held-upper-1",
+     "label": {
+      "et": "Teine kapsel ei tule 1 mm tõmbega välja",
+      "en": "Second capsule holds under a 1 mm pull"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "held-upper-2",
+     "label": {
+      "et": "Teine kapsel ei tule 2 mm tõmbega välja",
+      "en": "Second capsule holds under a 2 mm pull"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "lift-7",
+     "label": {
+      "et": "Alumise kapsli saab 7 mm üles tõsta",
+      "en": "The bottom capsule lifts 7 mm"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "out-7",
+     "label": {
+      "et": "Pärast 7 mm tõstmist tuleb kapsel välja",
+      "en": "Comes out after a 7 mm lift"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "lift-10",
+     "label": {
+      "et": "Alumise kapsli saab 10 mm üles tõsta",
+      "en": "The bottom capsule lifts 10 mm"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "out-10",
+     "label": {
+      "et": "Pärast 10 mm tõstmist tuleb kapsel välja",
+      "en": "Comes out after a 10 mm lift"
+     },
+     "passed": true,
+     "value": null
+    }
+   ]
+  },
+  {
+   "id": "rim-44-8",
+   "label": {
+    "et": "Serv 44,8 mm",
+    "en": "44.8 mm rim"
+   },
+   "checks": [
+    {
+     "id": "side-clearance",
+     "label": {
+      "et": "Küljel on vähemalt 0,3 mm vaba ruumi",
+      "en": "At least 0.3 mm of side clearance"
+     },
+     "passed": true,
+     "value": 0.95
+    },
+    {
+     "id": "rest",
+     "label": {
+      "et": "Viis kapslit mahub ritta",
+      "en": "Five capsules fit a row"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "load",
+     "label": {
+      "et": "Kapsel kukub ülevalt sisse",
+      "en": "A capsule drops in from the top"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "held-1",
+     "label": {
+      "et": "Alumine kapsel ei tule 1 mm tõmbega välja",
+      "en": "Bottom capsule holds under a 1 mm pull"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "held-2",
+     "label": {
+      "et": "Alumine kapsel ei tule 2 mm tõmbega välja",
+      "en": "Bottom capsule holds under a 2 mm pull"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "held-upper-1",
+     "label": {
+      "et": "Teine kapsel ei tule 1 mm tõmbega välja",
+      "en": "Second capsule holds under a 1 mm pull"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "held-upper-2",
+     "label": {
+      "et": "Teine kapsel ei tule 2 mm tõmbega välja",
+      "en": "Second capsule holds under a 2 mm pull"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "lift-7",
+     "label": {
+      "et": "Alumise kapsli saab 7 mm üles tõsta",
+      "en": "The bottom capsule lifts 7 mm"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "out-7",
+     "label": {
+      "et": "Pärast 7 mm tõstmist tuleb kapsel välja",
+      "en": "Comes out after a 7 mm lift"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "lift-10",
+     "label": {
+      "et": "Alumise kapsli saab 10 mm üles tõsta",
+      "en": "The bottom capsule lifts 10 mm"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "out-10",
+     "label": {
+      "et": "Pärast 10 mm tõstmist tuleb kapsel välja",
+      "en": "Comes out after a 10 mm lift"
+     },
+     "passed": true,
+     "value": null
+    }
+   ]
+  },
+  {
+   "id": "rim-45-5",
+   "label": {
+    "et": "Serv 45,5 mm",
+    "en": "45.5 mm rim"
+   },
+   "checks": [
+    {
+     "id": "side-clearance",
+     "label": {
+      "et": "Küljel on vähemalt 0,3 mm vaba ruumi",
+      "en": "At least 0.3 mm of side clearance"
+     },
+     "passed": true,
+     "value": 0.6
+    },
+    {
+     "id": "rest",
+     "label": {
+      "et": "Viis kapslit mahub ritta",
+      "en": "Five capsules fit a row"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "load",
+     "label": {
+      "et": "Kapsel kukub ülevalt sisse",
+      "en": "A capsule drops in from the top"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "held-1",
+     "label": {
+      "et": "Alumine kapsel ei tule 1 mm tõmbega välja",
+      "en": "Bottom capsule holds under a 1 mm pull"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "held-2",
+     "label": {
+      "et": "Alumine kapsel ei tule 2 mm tõmbega välja",
+      "en": "Bottom capsule holds under a 2 mm pull"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "held-upper-1",
+     "label": {
+      "et": "Teine kapsel ei tule 1 mm tõmbega välja",
+      "en": "Second capsule holds under a 1 mm pull"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "held-upper-2",
+     "label": {
+      "et": "Teine kapsel ei tule 2 mm tõmbega välja",
+      "en": "Second capsule holds under a 2 mm pull"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "lift-7",
+     "label": {
+      "et": "Alumise kapsli saab 7 mm üles tõsta",
+      "en": "The bottom capsule lifts 7 mm"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "out-7",
+     "label": {
+      "et": "Pärast 7 mm tõstmist tuleb kapsel välja",
+      "en": "Comes out after a 7 mm lift"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "lift-10",
+     "label": {
+      "et": "Alumise kapsli saab 10 mm üles tõsta",
+      "en": "The bottom capsule lifts 10 mm"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "out-10",
+     "label": {
+      "et": "Pärast 10 mm tõstmist tuleb kapsel välja",
+      "en": "Comes out after a 10 mm lift"
+     },
+     "passed": true,
+     "value": null
+    }
+   ]
+  },
+  {
+   "id": "k-fee",
+   "label": {
+    "et": "K-fee, serv 45,4 mm",
+    "en": "K-fee, 45.4 mm rim"
+   },
+   "checks": [
+    {
+     "id": "side-clearance",
+     "label": {
+      "et": "Küljel on vähemalt 0,3 mm vaba ruumi",
+      "en": "At least 0.3 mm of side clearance"
+     },
+     "passed": true,
+     "value": 0.65
+    },
+    {
+     "id": "rest",
+     "label": {
+      "et": "Viis kapslit mahub ritta",
+      "en": "Five capsules fit a row"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "load",
+     "label": {
+      "et": "Kapsel kukub ülevalt sisse",
+      "en": "A capsule drops in from the top"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "held-1",
+     "label": {
+      "et": "Alumine kapsel ei tule 1 mm tõmbega välja",
+      "en": "Bottom capsule holds under a 1 mm pull"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "held-2",
+     "label": {
+      "et": "Alumine kapsel ei tule 2 mm tõmbega välja",
+      "en": "Bottom capsule holds under a 2 mm pull"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "held-upper-1",
+     "label": {
+      "et": "Teine kapsel ei tule 1 mm tõmbega välja",
+      "en": "Second capsule holds under a 1 mm pull"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "held-upper-2",
+     "label": {
+      "et": "Teine kapsel ei tule 2 mm tõmbega välja",
+      "en": "Second capsule holds under a 2 mm pull"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "lift-7",
+     "label": {
+      "et": "Alumise kapsli saab 7 mm üles tõsta",
+      "en": "The bottom capsule lifts 7 mm"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "out-7",
+     "label": {
+      "et": "Pärast 7 mm tõstmist tuleb kapsel välja",
+      "en": "Comes out after a 7 mm lift"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "lift-10",
+     "label": {
+      "et": "Alumise kapsli saab 10 mm üles tõsta",
+      "en": "The bottom capsule lifts 10 mm"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "out-10",
+     "label": {
+      "et": "Pärast 10 mm tõstmist tuleb kapsel välja",
+      "en": "Comes out after a 10 mm lift"
+     },
+     "passed": true,
+     "value": null
+    }
+   ]
+  }
+ ]
+}

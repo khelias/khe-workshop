@@ -277,18 +277,31 @@ class Site:
 
     def stage(self, part: dict, lang: str, depth: int, meta: dict) -> str:
         t = TEXT[lang]
-        stage_file = next(item["file"] for item in part["exports"] if item["id"] == part["stage_export"])
-        last = len(meta["layers"])
+        files = {item["id"]: item["file"] for item in part["exports"]}
+        first = meta.get("first_layer", 1)
+        last = first + len(meta["layers"]) - 1
         after = [change for change in meta["colour_changes"] if change["layer"] > last]
         top = None
         if after:
             # What was printed after the replay's last layer, in its own colour.
             top = {"above": meta["layers"][-1][0] + 0.05, "colour": after[0]["colour"],
                    "label": part["replay"]["after_label"][lang]}
+        below = inlay = None
+        printed_below = meta.get("below")
+        if printed_below:
+            # What was printed under the replay's first layer, shown by the model instead.
+            if "before_label" not in part["replay"]:
+                raise SystemExit(f"FAIL {part['id']}: a replay that starts above layer 1 needs replay.before_label")
+            below = {"z": printed_below["z"], "label": part["replay"]["before_label"][lang]}
+        if part.get("stage_inlay"):
+            if not printed_below:
+                raise SystemExit(f"FAIL {part['id']}: stage_inlay takes its colour from a replay that starts above layer 1")
+            inlay = {"stl": self.data_link(part, depth, files[part["stage_inlay"]]), "colour": printed_below["colour"]}
         config = {
-            "lang": lang, "stl": self.data_link(part, depth, stage_file), "replay": self.data_link(part, depth, "replay.bin.gz"),
-            "rotate": part["replay"]["rotate_deg"], "colour": meta["colour"],
-            "top": top, "bed": ws.BED_MM, "text": t["stage"],
+            "lang": lang, "stl": self.data_link(part, depth, files[part["stage_export"]]),
+            "replay": self.data_link(part, depth, "replay.bin.gz"),
+            "rotate": part["replay"]["rotate_deg"], "colour": meta["colour"], "first": first,
+            "top": top, "below": below, "inlay": inlay, "bed": ws.BED_MM, "text": t["stage"],
         }
         tabs = "".join(f'<button type="button" class="stage__tab" data-view="{view}" aria-pressed="{str(view == "model").lower()}">{t[view]}</button>'
                        for view in ("model", "cut", "print"))

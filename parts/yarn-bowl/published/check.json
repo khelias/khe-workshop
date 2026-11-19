@@ -1,0 +1,106 @@
+{
+ "id": "yarn-bowl",
+ "openscad": "2026.10.11",
+ "exports": [
+  {
+   "id": "bowl",
+   "file": "yarn-bowl.stl",
+   "triangles": 135088,
+   "size_mm": [
+    200.815,
+    205.632,
+    113.2
+   ],
+   "volume_cm3": 193.4,
+   "nonmanifold_edges": 0,
+   "sha256": "f0731962559427d3304e19c8e74a4f447e3f36623ed772ad3e81122260f302de"
+  },
+  {
+   "id": "stamp",
+   "file": "yarn-bowl-stamp.stl",
+   "triangles": 24428,
+   "size_mm": [
+    77.5,
+    77.5,
+    0.68
+   ],
+   "volume_cm3": 0.9,
+   "nonmanifold_edges": 0,
+   "sha256": "29288df5c3f36cc626ae2f0a427c76754cbfdd2884e0c39a3fb9b90db97f5503"
+  }
+ ],
+ "probes": [
+  {
+   "id": "yarn-4",
+   "label": {
+    "et": "Peenike, 4 mm",
+    "en": "Fine, 4 mm"
+   },
+   "checks": [
+    {
+     "id": "clearance",
+     "label": {
+      "et": "Lõngal on pilus mõlemal küljel vähemalt 1 mm ruumi",
+      "en": "At least 1 mm of room on each side of the yarn in the guide"
+     },
+     "passed": true,
+     "value": 3.2
+    },
+    {
+     "id": "held-end",
+     "label": {
+      "et": "Konksu otsast 4 mm üles tõmmatud lõng jääb seina taha",
+      "en": "Pulled 4 mm up from the hook's end, the yarn meets the wall"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "held-low",
+     "label": {
+      "et": "Pilu põhjast 6 mm otse üles tõmmatud lõng jääb seina taha",
+      "en": "Pulled 6 mm straight up from the bottom of the guide, the yarn meets the wall"
+     },
+     "passed": true,
+     "value": null
+    }
+   ]
+  },
+  {
+   "id": "yarn-6",
+   "label": {
+    "et": "Paks, 6 mm",
+    "en": "Thick, 6 mm"
+   },
+   "checks": [
+    {
+     "id": "clearance",
+     "label": {
+      "et": "Lõngal on pilus mõlemal küljel vähemalt 1 mm ruumi",
+      "en": "At least 1 mm of room on each side of the yarn in the guide"
+     },
+     "passed": true,
+     "value": 2.2
+    },
+    {
+     "id": "held-end",
+     "label": {
+      "et": "Konksu otsast 4 mm üles tõmmatud lõng jääb seina taha",
+      "en": "Pulled 4 mm up from the hook's end, the yarn meets the wall"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "held-low",
+     "label": {
+      "et": "Pilu põhjast 6 mm otse üles tõmmatud lõng jääb seina taha",
+      "en": "Pulled 6 mm straight up from the bottom of the guide, the yarn meets the wall"
+     },
+     "passed": true,
+     "value": null
+    }
+   ]
+  }
+ ]
+}

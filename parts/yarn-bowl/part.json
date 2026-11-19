@@ -12,15 +12,32 @@
   "licence": "CC-BY-4.0",
   "credit": null,
   "source": "yarn-bowl.scad",
-  "published": false,
-  "proof": null,
+  "published": true,
+  "proof": {
+    "printed": "2026-11-19",
+    "use": {
+      "et": "Hoiab kudumise ajal lõngakera kausis, et see põrandale ei veereks.",
+      "en": "Holds the ball of yarn while we knit, so it does not roll onto the floor."
+    }
+  },
   "exports": [
-    { "id": "bowl", "file": "yarn-bowl.stl", "defines": { "mode": "bowl" }, "title": { "et": "Kauss", "en": "Bowl" } },
-    { "id": "stamp", "file": "yarn-bowl-stamp.stl", "defines": { "mode": "stamp" }, "title": { "et": "Tempel teist värvi", "en": "Stamp in a second colour" } }
+    { "id": "bowl", "file": "yarn-bowl.stl", "defines": { "mode": "bowl", "$fn": 96 }, "title": { "et": "Kauss", "en": "Bowl" } },
+    { "id": "stamp", "file": "yarn-bowl-stamp.stl", "defines": { "mode": "stamp", "$fn": 96 }, "title": { "et": "Tempel teist värvi", "en": "Stamp in a second colour" } }
   ],
   "stage_export": "bowl",
+  "stage_inlay": "stamp",
   "allowed_nonmanifold_edges": 0,
-  "replay": { "last_layer": 472, "rotate_deg": 0, "note": null },
+  "replay": {
+    "first_layer": 4,
+    "last_layer": 472,
+    "tolerance": 3.5,
+    "rotate_deg": 0,
+    "before_label": { "et": "valge tempel", "en": "stamp in white" },
+    "note": {
+      "et": "Siin on päris prinditöö alates kihist 4. Kolm alumist kihti olid pere oma tempel, need jäid välja ja nende asemel on avalik tempel.",
+      "en": "The replay is the real print from layer 4. The first three layers were the family's own stamp, so they are left out and the public stamp appears instead."
+    }
+  },
   "probes": {
     "variant_heading": { "et": "Lõng", "en": "Yarn" },
     "value_heading": { "et": "Vaba ruumi küljel", "en": "Side clearance" },
@@ -31,8 +48,8 @@
     ],
     "checks": [
       { "id": "clearance", "label": { "et": "Lõngal on pilus mõlemal küljel vähemalt 1 mm ruumi", "en": "At least 1 mm of room on each side of the yarn in the guide" }, "defines": { "mode": "clearance" }, "expect": "value", "log_key": "yarn_clearance", "min": 1 },
-      { "id": "held-end", "label": { "et": "Konksu otsast 4 mm üles tõmmatud lõng jääb seina taha", "en": "Pulled 4 mm up from the hook's end, the yarn meets the wall" }, "defines": { "mode": "hold_end", "lift": 4 }, "expect": "contact" },
-      { "id": "held-low", "label": { "et": "Pilu põhjast 6 mm otse üles tõmmatud lõng jääb seina taha", "en": "Pulled 6 mm straight up from the bottom of the guide, the yarn meets the wall" }, "defines": { "mode": "hold_low", "lift": 6 }, "expect": "contact" }
+      { "id": "held-end", "label": { "et": "Konksu otsast 4 mm üles tõmmatud lõng jääb seina taha", "en": "Pulled 4 mm up from the hook's end, the yarn meets the wall" }, "defines": { "mode": "hold_end", "lift": 4, "$fn": 96 }, "expect": "contact" },
+      { "id": "held-low", "label": { "et": "Pilu põhjast 6 mm otse üles tõmmatud lõng jääb seina taha", "en": "Pulled 6 mm straight up from the bottom of the guide, the yarn meets the wall" }, "defines": { "mode": "hold_low", "lift": 6, "$fn": 96 }, "expect": "contact" }
     ]
   }
 }

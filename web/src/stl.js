@@ -30,35 +30,47 @@ export function parseStl(bytes) {
   return { positions, normals, count };
 }
 
+// The lowest and highest corner of a flat position array.
+export function bounds(positions) {
+  const min = [Infinity, Infinity, Infinity];
+  const max = [-Infinity, -Infinity, -Infinity];
+  for (let i = 0; i < positions.length; i += 1) {
+    const axis = i % 3;
+    min[axis] = Math.min(min[axis], positions[i]);
+    max[axis] = Math.max(max[axis], positions[i]);
+  }
+  return { min, max };
+}
+
+// Moves a mesh, in place, by the shift placeOnBed returned for the part it belongs to.
+export function moveBy(mesh, shift) {
+  for (let i = 0; i < mesh.positions.length; i += 1) mesh.positions[i] -= shift[i % 3];
+}
+
+// The triangles whose three heights pass `keep`, as a mesh of their own.
+export function trianglesWhere(mesh, keep) {
+  const { positions, normals } = mesh;
+  const count = positions.length / 9;
+  const kept = [];
+  for (let t = 0; t < count; t += 1) if (keep(positions[t * 9 + 2], positions[t * 9 + 5], positions[t * 9 + 8])) kept.push(t);
+  const part = { positions: new Float32Array(kept.length * 9), normals: new Float32Array(kept.length * 9) };
+  kept.forEach((t, at) => {
+    part.positions.set(positions.subarray(t * 9, t * 9 + 9), at * 9);
+    part.normals.set(normals.subarray(t * 9, t * 9 + 9), at * 9);
+  });
+  return part;
+}
+
 // Moves the part, in place, to the bed's centre resting on it. Triangles reaching above
 // splitAboveZ come back apart as `top`, for geometry printed in another colour.
 export function placeOnBed(mesh, splitAboveZ) {
-  const { positions, normals, count } = mesh;
-  const min = [Infinity, Infinity, Infinity];
-  const max = [-Infinity, -Infinity, -Infinity];
-  for (let i = 0; i < positions.length; i += 3) {
-    for (let axis = 0; axis < 3; axis += 1) {
-      min[axis] = Math.min(min[axis], positions[i + axis]);
-      max[axis] = Math.max(max[axis], positions[i + axis]);
-    }
-  }
+  const { min, max } = bounds(mesh.positions);
   const shift = [(min[0] + max[0]) / 2, (min[1] + max[1]) / 2, min[2]];
-  for (let i = 0; i < positions.length; i += 1) positions[i] -= shift[i % 3];
+  moveBy(mesh, shift);
   const size = [max[0] - min[0], max[1] - min[1], max[2] - min[2]];
-  const whole = { positions, normals };
-  if (splitAboveZ === null) return { whole, body: whole, top: { positions: new Float32Array(0), normals: new Float32Array(0) }, size };
-  const isTop = (t) => Math.max(positions[t * 9 + 2], positions[t * 9 + 5], positions[t * 9 + 8]) > splitAboveZ;
-  let topCount = 0;
-  for (let t = 0; t < count; t += 1) if (isTop(t)) topCount += 1;
-  const body = { positions: new Float32Array((count - topCount) * 9), normals: new Float32Array((count - topCount) * 9) };
-  const top = { positions: new Float32Array(topCount * 9), normals: new Float32Array(topCount * 9) };
-  let bodyAt = 0;
-  let topAt = 0;
-  for (let t = 0; t < count; t += 1) {
-    const target = isTop(t) ? top : body;
-    const at = target === top ? topAt++ : bodyAt++;
-    target.positions.set(positions.subarray(t * 9, t * 9 + 9), at * 9);
-    target.normals.set(normals.subarray(t * 9, t * 9 + 9), at * 9);
-  }
-  return { whole, body, top, size };
+  const whole = { positions: mesh.positions, normals: mesh.normals };
+  if (splitAboveZ === null) return { whole, body: whole, top: { positions: new Float32Array(0), normals: new Float32Array(0) }, size, shift };
+  const body = trianglesWhere(whole, (a, b, c) => Math.max(a, b, c) <= splitAboveZ);
+  const top = trianglesWhere(whole, (a, b, c) => Math.max(a, b, c) > splitAboveZ);
+  return { whole, body, top, size, shift };
 }

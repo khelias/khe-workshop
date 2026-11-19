@@ -107,7 +107,8 @@ def arc_points(x0: float, y0: float, x1: float, y1: float, i: float, j: float, c
 class Records:
     """Quantised records, with nearly straight runs of one feature merged."""
 
-    def __init__(self) -> None:
+    def __init__(self, tolerance: float = TOLERANCE) -> None:
+        self.tolerance = tolerance
         self.kinds = array("B")
         self.xs = array("i")
         self.ys = array("i")
@@ -128,7 +129,7 @@ class Records:
         length = math.hypot(dx, dy)
         if length == 0:
             return False
-        return all(abs((px - ax) * dy - (py - ay) * dx) / length <= TOLERANCE for px, py in self.merged)
+        return all(abs((px - ax) * dy - (py - ay) * dx) / length <= self.tolerance for px, py in self.merged)
 
     def add(self, kind: int, x_mm: float, y_mm: float) -> None:
         x, y = round(x_mm * SCALE), round(y_mm * SCALE)
@@ -166,8 +167,15 @@ def spread_times(times: list[float]) -> list[float]:
     return spread
 
 
-def parse(text: str, last_layer: int) -> tuple[dict, Records]:
-    records = Records()
+def layer_span(settings: dict) -> tuple[int, int]:
+    """The first and last layer a part's replay settings cover."""
+    return settings.get("first_layer", 1), settings["last_layer"]
+
+
+def parse(text: str, last_layer: int, first_layer: int = 1, tolerance: float = TOLERANCE) -> tuple[dict, Records]:
+    """Layers first_layer to last_layer. Layers below first_layer are followed but not recorded;
+    with first_layer above 1 the metadata says where the replay starts and what lay below it."""
+    records = Records(tolerance)
     estimate = _ESTIMATE.search(text)
     total_seconds = duration_seconds(estimate.group(1)) if estimate else 0.0
     colours_match = _COLOURS.search(text)
@@ -187,6 +195,9 @@ def parse(text: str, last_layer: int) -> tuple[dict, Records]:
     await_z = False
     low_x = low_y = math.inf
     high_x = high_y = -math.inf
+    cut_below = first_layer > 1
+    below_z = 0.0
+    below_colours: list[str] = []
 
     def colour_of(tool: int) -> str:
         return colours[min(tool, len(colours) - 1)]
@@ -196,9 +207,13 @@ def parse(text: str, last_layer: int) -> tuple[dict, Records]:
         if await_z:
             await_z = False
             found = _LAYER_Z.match(line)
-            if found and layer <= last_layer:
+            if found and layer < first_layer:
+                below_z = round(float(found.group(1)), 3)
+            elif found and layer <= last_layer:
                 layers.append([round(float(found.group(1)), 3), records.mark_layer()])
                 times.append(now)
+                if cut_below and layer == first_layer:
+                    records.add(0, x, y)
             continue
         if line.startswith(";"):
             if line == ";LAYER_CHANGE":
@@ -228,7 +243,9 @@ def parse(text: str, last_layer: int) -> tuple[dict, Records]:
         elif line[:1] == "T" and line[1:].strip().isdigit():
             tool = int(line[1:].strip())
             if start_tool is None:
-                start_tool = tool
+                # A replay from above layer 1 takes the tool of its first extrusion instead.
+                if not cut_below:
+                    start_tool = tool
             elif layer >= 1:
                 changes.append({"layer": layer, "seconds": round(now, 1), "colour": colour_of(tool)})
         if line[:1] != "G":
@@ -243,10 +260,14 @@ def parse(text: str, last_layer: int) -> tuple[dict, Records]:
         if "X" not in words and "Y" not in words:
             continue
         nx, ny = float(words.get("X", x)), float(words.get("Y", y))
-        if layer < 1 or layer > last_layer:
+        extruding = extruded > 0
+        if layer < first_layer or layer > last_layer:
+            if extruding and 1 <= layer < first_layer and colour_of(tool) not in below_colours:
+                below_colours.append(colour_of(tool))
             x, y = nx, ny
             continue
-        extruding = extruded > 0
+        if cut_below and extruding and start_tool is None:
+            start_tool = tool
         move_kind = kind if extruding else 0
         if code in ("G2", "G3"):
             points = arc_points(x, y, nx, ny, float(words.get("I", 0)), float(words.get("J", 0)), code == "G2")
@@ -259,8 +280,9 @@ def parse(text: str, last_layer: int) -> tuple[dict, Records]:
                 high_x, high_y = max(high_x, px), max(high_y, py)
         x, y = nx, ny
 
-    if len(layers) != last_layer:
-        raise SystemExit(f"FAIL: the G-code has {len(layers)} layers, expected {last_layer}")
+    expected = last_layer - first_layer + 1
+    if len(layers) != expected:
+        raise SystemExit(f"FAIL: the G-code has {len(layers)} layers from {first_layer}, expected {expected}")
     end = cut_seconds if cut_seconds is not None else total_seconds or now
     for row, seconds in zip(layers, spread_times([*times, end])):
         row.append(round(seconds, 1))
@@ -277,6 +299,11 @@ def parse(text: str, last_layer: int) -> tuple[dict, Records]:
         "colour_changes": changes,
         "walls": [round(low_x, 2), round(low_y, 2), round(high_x, 2), round(high_y, 2)],
     }
+    if cut_below:
+        colour = meta["colour"]
+        meta["first_layer"] = first_layer
+        meta["start_seconds"] = layers[0][2]
+        meta["below"] = {"z": below_z, "colour": next((item for item in below_colours if item != colour), colour)}
     return meta, records
 
 
@@ -303,21 +330,30 @@ def encode(meta: dict, records: Records) -> bytes:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("gcode", type=Path)
-    parser.add_argument("--part", help="part id: reads last_layer from its part.json, writes build/replay/<id>.bin.gz")
+    parser.add_argument("--part", help="part id: reads its replay settings from part.json, writes build/replay/<id>.bin.gz")
     parser.add_argument("--last-layer", type=int)
+    parser.add_argument("--first-layer", type=int)
+    parser.add_argument("--tolerance", type=float, help="how far, in 1/100 mm, a merged run may bend")
     parser.add_argument("--out", type=Path)
     args = parser.parse_args()
-    last_layer, out = args.last_layer, args.out
+    first_layer, last_layer, tolerance, out = args.first_layer, args.last_layer, args.tolerance, args.out
     if args.part:
         import workshop as ws
         part = next((item for item in ws.load_parts() if item["id"] == args.part), None)
         if part is None:
             parser.error(f"no part named {args.part}")
-        last_layer = last_layer or part["replay"]["last_layer"]
+        first, last = layer_span(part["replay"])
+        first_layer = first if first_layer is None else first_layer
+        last_layer = last if last_layer is None else last_layer
+        tolerance = part["replay"].get("tolerance", TOLERANCE) if tolerance is None else tolerance
         out = out or ws.REPLAYS / f"{args.part}.bin.gz"
-    if not last_layer or not out:
+    if last_layer is None or not out:
         parser.error("give --part, or both --last-layer and --out")
-    meta, records = parse(args.gcode.read_text(encoding="utf-8", errors="replace"), last_layer)
+    first_layer = 1 if first_layer is None else first_layer
+    tolerance = TOLERANCE if tolerance is None else tolerance
+    if not 1 <= first_layer <= last_layer:
+        parser.error("--first-layer is between 1 and the last layer")
+    meta, records = parse(args.gcode.read_text(encoding="utf-8", errors="replace"), last_layer, first_layer, tolerance)
     data = encode(meta, records)
     if len(data) > BUDGET:
         print(f"FAIL: replay is {len(data)} bytes, the budget is {BUDGET}", file=sys.stderr)

@@ -18,7 +18,8 @@ This repo's own decisions: [docs/adr/](docs/adr/).
   vertices rounded to 0.001 mm and `check.json` without its hashes, numbers within 0.001.
 - `python3 scripts/build.py` - writes `published/` for parts marked published.
 - `python3 scripts/replay.py <gcode> --part <id>` - turns printed G-code into
-  `build/replay/<id>.bin.gz`, within 1.5 MB. G-code stays out of git.
+  `build/replay/<id>.bin.gz`, within 1.5 MB, from the part's `replay` settings.
+  G-code stays out of git.
 - `python3 scripts/site_build.py <out> [--preview] [--base /workshop/]` - writes the
   room's pages. `--preview` includes unpublished parts; without it the build verifies
   each published part's files and proof and fails when none is published. `--base`
@@ -62,6 +63,14 @@ It must print 0. A failure message never repeats a term.
 A probe is a render whose result is declared in `part.json`: `clear` (nothing
 collides), `contact` (something does) or `value` (an `echo` of `log_key` is at
 least `min`). A part with non-manifold edges declares how many and why.
+
+A replay covers `replay.first_layer` (default 1) to `last_layer`, so layers that
+held family text are left out at either end; `before_label` and `after_label` name
+what the room shows in their place. `stage_inlay` names an export the stage draws
+inside the stage mesh in the colour printed below the replay. `replay.tolerance`
+(1/100 mm, default 2) merges more for a replay over its budget, and an export's
+`defines` may lower `$fn` or a mesh resolution for a part over its 10 MB budget
+([ADR-001](docs/adr/001-published-parts-carry-their-proof.md)).
 
 To publish a part: run the check, set `published: true` and fill `proof`
 (`printed` as `YYYY-MM-DD`, `use` in et and en, an optional `photo`;

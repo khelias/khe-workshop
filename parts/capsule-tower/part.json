@@ -12,8 +12,14 @@
   "licence": "CC-BY-4.0",
   "credit": null,
   "source": "capsule-tower.scad",
-  "published": false,
-  "proof": null,
+  "published": true,
+  "proof": {
+    "printed": "2026-11-19",
+    "use": {
+      "et": "Hoiab isa kohvikapsleid köögilaual, kuus sorti korraga.",
+      "en": "Holds Dad's coffee capsules on the kitchen counter, six kinds at a time."
+    }
+  },
   "exports": [
     { "id": "tower", "file": "capsule-tower.stl", "defines": { "mode": "tower" }, "title": { "et": "Torn", "en": "Tower" } },
     { "id": "base", "file": "capsule-tower-base.stl", "defines": { "mode": "base" }, "title": { "et": "Alus", "en": "Base" } }

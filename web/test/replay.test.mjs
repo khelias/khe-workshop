@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { buildToolpaths, decodeReplay, formatDuration, layerAt, parseReplay, sliderToSeconds, verticesAt } from '../src/replay.js';
+import { buildToolpaths, decodeReplay, formatDuration, layerAt, parseReplay, secondsToSlider, sliderToSeconds, verticesAt } from '../src/replay.js';
 import { parseStl, placeOnBed } from '../src/stl.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -39,12 +39,44 @@ T1
 G1 X50 Y50 E1
 `;
 
-function encodeSample(lastLayer) {
+// A stamp in T0 in layers 1 and 2 under a T1 body; layer 2 ends in T0, so T1 comes back in layer 3.
+const STAMPED = `; estimated printing time (normal mode) = 1h 0m 0s
+; filament_colour = #FFFFFF;#C0201C
+; total layers count = 4
+T0
+M83
+;TIME_ELAPSED:100
+;LAYER_CHANGE
+;Z:0.2
+;TYPE:Outer wall
+G1 X90 Y90 E1
+T1
+G1 X91 Y90 E1
+;TIME_ELAPSED:1100
+;LAYER_CHANGE
+;:0.44
+G1 X93 Y93 E1
+T0
+G1 X92 Y92 E1
+;TIME_ELAPSED:2100
+;LAYER_CHANGE
+;:0.68
+T1
+;TYPE:Outer wall
+G1 X10 Y10
+G1 X20 Y10 E1
+;TIME_ELAPSED:3100
+;LAYER_CHANGE
+;:0.92
+G1 X20 Y20 E1
+`;
+
+function encodeSample(lastLayer, source = SAMPLE, extra = []) {
   const folder = mkdtempSync(join(tmpdir(), 'replay-test-'));
-  const source = join(folder, 'sample.txt');
+  const file = join(folder, 'sample.txt');
   const out = join(folder, 'sample.bin.gz');
-  writeFileSync(source, SAMPLE);
-  execFileSync('python3', [join(root, 'scripts', 'replay.py'), source, '--last-layer', String(lastLayer), '--out', out], { stdio: 'pipe' });
+  writeFileSync(file, source);
+  execFileSync('python3', [join(root, 'scripts', 'replay.py'), file, '--last-layer', String(lastLayer), '--out', out, ...extra], { stdio: 'pipe' });
   return new Uint8Array(readFileSync(out));
 }
 
@@ -64,6 +96,20 @@ test('a replay round-trips from G-code, arcs included, and stops at the last lay
   assert.ok(Math.max(...xs) <= 30.01, 'nothing from the left-out layer is present');
 });
 
+test('a replay can start above layer 1, leaving the layers below out', async () => {
+  const { meta, kinds, xs, ys } = await decodeReplay(encodeSample(4, STAMPED, ['--first-layer', '3']));
+  assert.deepEqual(meta.layers.map((layer) => layer[0]), [0.68, 0.92]);
+  assert.equal(meta.total_layers, 4);
+  assert.equal(meta.first_layer, 3);
+  assert.equal(meta.start_seconds, 2100);
+  assert.equal(meta.colour, '#C0201C');
+  assert.deepEqual(meta.colour_changes, []);
+  assert.deepEqual(meta.below, { z: 0.44, colour: '#FFFFFF' });
+  assert.equal(kinds[0], 0, 'the replay starts where the head was, without a line');
+  assert.ok(Math.max(...xs.slice(1), ...ys.slice(1)) < 90, 'nothing from layers 1 and 2 is recorded');
+  assert.equal(meta.layers[0][1], 0);
+});
+
 test('toolpaths are centred on the walls and turned as printed', async () => {
   const replay = await decodeReplay(encodeSample(2));
   const { all, outer } = buildToolpaths(replay, 90, () => [255, 255, 255]);
@@ -79,6 +125,9 @@ test('toolpaths are centred on the walls and turned as printed', async () => {
 test('the slider maps time to the layer being printed', () => {
   const layers = [[0.2, 0, 100], [0.4, 10, 1100], [0.6, 20, 2100]];
   assert.equal(sliderToSeconds(500, 1000, 3100), 1550);
+  assert.equal(sliderToSeconds(0, 1000, 22802, 1923), 1923, 'a replay from layer 4 starts at its first layer');
+  assert.equal(sliderToSeconds(1000, 1000, 22802, 1923), 22802);
+  assert.equal(secondsToSlider(sliderToSeconds(250, 1000, 22802, 1923), 1000, 22802, 1923), 250);
   assert.deepEqual(layerAt(layers, 3100, 0), { index: 0, fraction: 0 });
   assert.deepEqual(layerAt(layers, 3100, 600), { index: 0, fraction: 0.5 });
   assert.deepEqual(layerAt(layers, 3100, 1100), { index: 1, fraction: 0 });

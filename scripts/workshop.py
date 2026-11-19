@@ -24,7 +24,7 @@ BUILD = ROOT / "build"
 CHECK_RESULTS = BUILD / "check"
 REPLAYS = BUILD / "replay"
 BED_MM = 260.0
-PUBLISHED_BUDGET = 5 * 1024 * 1024
+PUBLISHED_BUDGET = 10 * 1024 * 1024
 
 _PROBLEM = re.compile(r"^.*\b(?:WARNING|ERROR)\b.*$", re.M)
 
@@ -201,10 +201,12 @@ def published_problems(part: dict) -> list[str]:
         problems.append("published/replay.bin.gz is missing")
     else:
         try:
-            layers = len(replay_format.read_meta(replay_file)["layers"])
+            meta = replay_format.read_meta(replay_file)
+            layers, starts = len(meta["layers"]), meta.get("first_layer", 1)
         except (OSError, EOFError, ValueError, KeyError) as broken:
             problems.append(f"published/replay.bin.gz cannot be read: {broken}")
         else:
-            if layers != part["replay"]["last_layer"]:
-                problems.append(f"the replay has {layers} layers, it must stop at {part['replay']['last_layer']}")
+            first, last = replay_format.layer_span(part["replay"])
+            if starts != first or layers != last - first + 1:
+                problems.append(f"the replay runs from layer {starts} over {layers} layers, it must run from {first} to {last}")
     return problems

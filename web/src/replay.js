@@ -140,8 +140,13 @@ export function verticesAt(layerVertex, position) {
   return { start, upTo: start + count };
 }
 
-export function sliderToSeconds(value, max, totalSeconds) {
-  return (value / max) * totalSeconds;
+// A replay that starts above layer 1 starts its slider at its first layer's time.
+export function sliderToSeconds(value, max, totalSeconds, startSeconds = 0) {
+  return startSeconds + (value / max) * (totalSeconds - startSeconds);
+}
+
+export function secondsToSlider(seconds, max, totalSeconds, startSeconds = 0) {
+  return ((seconds - startSeconds) / (totalSeconds - startSeconds)) * max;
 }
 
 export function formatDuration(seconds) {

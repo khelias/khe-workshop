@@ -1,8 +1,8 @@
 // The part's stage: one slider drives the model, the cut and the replay of the real print.
 import * as THREE from '../vendor/three/three.module.js';
 import { OrbitControls } from '../vendor/three/OrbitControls.js';
-import { buildToolpaths, decodeReplay, formatDuration, layerAt, loadBytes, sliderToSeconds, verticesAt } from './replay.js';
-import { parseStl, placeOnBed } from './stl.js';
+import { buildToolpaths, decodeReplay, formatDuration, layerAt, loadBytes, secondsToSlider, sliderToSeconds, verticesAt } from './replay.js';
+import { moveBy, parseStl, placeOnBed, trianglesWhere } from './stl.js';
 
 const SLIDER_MAX = 1000;
 const PLAY_MS = 24000;
@@ -73,11 +73,32 @@ class Stage {
   }
 
   async start() {
-    const mesh = parseStl(await loadBytes(this.config.stl));
-    this.buildScene(mesh);
+    const inlay = this.config.inlay ? loadBytes(this.config.inlay.stl) : null;
+    inlay?.catch(() => {});
+    this.buildScene(parseStl(await loadBytes(this.config.stl)));
     this.bindControls();
     this.root.dataset.ready = 'true';
     this.setView('model');
+    // The inlay is a detail: the stage works without it, so a failed load leaves no error.
+    inlay?.then((bytes) => this.addInlay(parseStl(bytes))).catch(() => {});
+  }
+
+  // A part printed in another colour inside the stage mesh, loaded after the first view shows.
+  addInlay(mesh) {
+    moveBy(mesh, this.shift);
+    // It fills the stage mesh's groove exactly, so it is drawn a little nearer to win.
+    this.inlay = this.addSolid(geometryOf(mesh), this.config.inlay.colour, { polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -4 });
+    this.inlay.material.clippingPlanes = this.view === 'cut' ? this.clipped : NO_CLIP;
+    this.invalidate();
+  }
+
+  addSolid(geometry, colour, options = {}) {
+    const material = new THREE.MeshStandardMaterial({ color: colour, roughness: 0.5, side: THREE.DoubleSide, ...options });
+    this.materials.push(material);
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.renderOrder = 2;
+    this.turntable.add(mesh);
+    return mesh;
   }
 
   buildScene(mesh) {
@@ -116,6 +137,7 @@ class Stage {
     const top = this.config.top;
     const placed = placeOnBed(mesh, top ? top.above : null);
     this.size = placed.size;
+    this.shift = placed.shift;
     this.clip = new THREE.Plane(new THREE.Vector3(-1, 0, 0), 0);
     this.clipped = [this.clip];
     const rgb = hexToRgb(this.config.colour);
@@ -125,11 +147,18 @@ class Stage {
     this.body.renderOrder = 2;
     this.turntable.add(this.body);
 
-    if (placed.top.positions.length) {
-      this.materials.push(new THREE.MeshStandardMaterial({ color: top.colour, roughness: 0.5, side: THREE.DoubleSide }));
-      this.top = new THREE.Mesh(geometryOf(placed.top), this.materials[1]);
-      this.top.renderOrder = 2;
-      this.turntable.add(this.top);
+    if (placed.top.positions.length) this.top = this.addSolid(geometryOf(placed.top), top.colour);
+
+    // The layers printed before the replay starts stay in the print view as the model, cut just
+    // under the replay's first layer: only the triangles that reach that low, for a light draw.
+    const below = this.config.below;
+    if (below) {
+      const cut = below.z - 0.02;
+      const material = this.materials[0].clone();
+      material.clippingPlanes = [new THREE.Plane(new THREE.Vector3(0, -1, 0), cut)];
+      this.base = new THREE.Mesh(geometryOf(trianglesWhere(placed.body, (a, b, c) => Math.min(a, b, c) < cut)), material);
+      this.base.renderOrder = 2;
+      this.turntable.add(this.base);
     }
 
     this.buildCut(geometryOf({ positions: placed.whole.positions }));
@@ -250,8 +279,9 @@ class Stage {
       this.wallLines = lineObject(built.outer);
       this.turntable.add(this.wallLines);
     }
+    this.startSeconds = this.meta.start_seconds ?? 0;
     const change = this.meta.colour_changes[0];
-    if (change) this.mark.style.insetInlineStart = `${Math.min(change.seconds / this.meta.seconds, 1) * 100}%`;
+    if (change) this.mark.style.insetInlineStart = `${Math.min(secondsToSlider(change.seconds, 1, this.meta.seconds, this.startSeconds), 1) * 100}%`;
   }
 
   // What depends on the view only, set once when the view opens.
@@ -262,6 +292,7 @@ class Stage {
     this.cutMasks.visible = isCut;
     this.cap.visible = isCut;
     this.body.visible = !isPrint;
+    if (this.base) this.base.visible = isPrint;
     this.ghost.visible = isPrint;
     this.head.visible = false;
     if (this.top) this.top.visible = !isPrint;
@@ -295,7 +326,7 @@ class Stage {
 
   applyPrint(value) {
     const meta = this.meta;
-    const seconds = sliderToSeconds(value, SLIDER_MAX, meta.seconds);
+    const seconds = sliderToSeconds(value, SLIDER_MAX, meta.seconds, this.startSeconds);
     const position = layerAt(meta.layers, meta.seconds, seconds);
     const full = verticesAt(this.layerVertex, position);
     const finished = value >= SLIDER_MAX;
@@ -312,9 +343,10 @@ class Stage {
     if (last >= 0) this.head.position.set(points[last * 3], points[last * 3 + 1], points[last * 3 + 2]);
     let text = this.text.print
       .replace('{time}', formatDuration(seconds))
-      .replace('{layer}', position.index + 1)
+      .replace('{layer}', position.index + this.config.first)
       .replace('{total}', meta.total_layers);
     if (finished && this.config.top) text += `, ${this.config.top.label}`;
+    if (value === 0 && this.config.below) text += `, ${this.config.below.label}`;
     this.setReadout(text);
   }
 
