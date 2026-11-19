@@ -5,7 +5,6 @@ Exit 0 on a pass, 1 on a failure naming the part, 2 when OpenSCAD is missing.
 """
 from __future__ import annotations
 
-import datetime
 import gzip
 import json
 import os
@@ -17,11 +16,14 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import replay as replay_format  # noqa: E402
 import workshop as ws  # noqa: E402
 
 SKIPPED_DIRS = {".git", "node_modules", "build", "__pycache__"}
 PRIVATE_SUFFIXES = {".3mf", ".gcode", ".zip"}
+
+
+def render_path(tmp: Path, part: dict, export: dict) -> Path:
+    return tmp / f"{part['id']}-{export['file']}"
 
 
 def check_exports(part: dict, tmp: Path, pool: ThreadPoolExecutor, failures: list[str]) -> list[dict]:
@@ -29,7 +31,7 @@ def check_exports(part: dict, tmp: Path, pool: ThreadPoolExecutor, failures: lis
     allowed = part.get("allowed_nonmanifold_edges", 0)
     if allowed and not part.get("allowed_nonmanifold_reason"):
         failures.append("allowed_nonmanifold_edges needs an allowed_nonmanifold_reason")
-    renders = [(export, tmp / f"{part['id']}-{export['file']}") for export in part["exports"]]
+    renders = [(export, render_path(tmp, part, export)) for export in part["exports"]]
     jobs = [pool.submit(ws.render, source, out, export["defines"]) for export, out in renders]
     results = []
     for (export, out), job in zip(renders, jobs):
@@ -82,52 +84,43 @@ def check_probes(part: dict, tmp: Path, pool: ThreadPoolExecutor, failures: list
     return results
 
 
-def check_published(part: dict, result: dict, failures: list[str]) -> None:
+def close(published: object, fresh: object) -> bool:
+    """Equal apart from sha256 fields, with numbers allowed to differ by 0.001."""
+    if isinstance(published, dict) and isinstance(fresh, dict):
+        keys = published.keys() - {"sha256"}
+        return keys == fresh.keys() - {"sha256"} and all(close(published[key], fresh[key]) for key in keys)
+    if isinstance(published, list) and isinstance(fresh, list):
+        return len(published) == len(fresh) and all(map(close, published, fresh))
+    if type(published) in (int, float) and type(fresh) in (int, float):
+        return abs(published - fresh) <= 0.001
+    return published == fresh
+
+
+def check_published(part: dict, result: dict, tmp: Path, failures: list[str]) -> None:
+    """The published STL files match check.json (ws.published_problems). On the platform
+    published/ was built on, check.json equals this check's results, hashes included, so the
+    files equal a fresh render byte for byte; on another, the STL triangles and the results
+    compare at 0.001 mm."""
     folder = part["_dir"] / "published"
-    build_file = folder / "build.json"
-    if not build_file.exists():
-        failures.append("published part has no published/build.json; run scripts/build.py")
+    failures.extend(ws.published_problems(part))
+    build = ws.read_published(part, "build.json")
+    if build is None:
         return
-    build = json.loads(build_file.read_text(encoding="utf-8"))
     version = ws.openscad_version()
     if build.get("openscad") != version:
         failures.append(f"built with OpenSCAD {build.get('openscad')}, this machine has {version}")
-    if build.get("source_sha256") != ws.sha256(part["_dir"] / part["source"]):
-        failures.append("the source changed since published/ was built")
-    fresh = {item["file"]: item["sha256"] for item in result["exports"]}
-    for export in part["exports"]:
-        stl = folder / export["file"]
-        if not stl.exists():
-            failures.append(f"published/{export['file']} is missing")
-        elif ws.sha256(stl) != fresh.get(export["file"]):
-            failures.append(f"published/{export['file']} differs from a fresh render")
-    proof = part.get("proof") or {}
-    printed = str(proof.get("printed"))
-    try:
-        valid_date = bool(re.fullmatch(r"\d{4}-\d{2}-\d{2}", printed)) and bool(datetime.date.fromisoformat(printed))
-    except ValueError:
-        valid_date = False
-    if not valid_date:
-        failures.append("proof.printed is not a YYYY-MM-DD date")
-    use = proof.get("use") or {}
-    if not (isinstance(use, dict) and use.get("et") and use.get("en")):
-        failures.append("proof.use needs a sentence in et and en")
-    if proof.get("photo") and not (folder / proof["photo"]).exists():
-        failures.append(f"proof photo published/{proof['photo']} is missing")
-    replay_file = folder / "replay.bin.gz"
-    if not replay_file.exists():
-        failures.append("published/replay.bin.gz is missing")
-    else:
-        try:
-            layers = len(replay_format.read_meta(replay_file)["layers"])
-        except (OSError, EOFError, ValueError, KeyError) as broken:
-            failures.append(f"published/replay.bin.gz cannot be read: {broken}")
-        else:
-            if layers != part["replay"]["last_layer"]:
-                failures.append(f"the replay has {layers} layers, it must stop at {part['replay']['last_layer']}")
-    check_file = folder / "check.json"
-    if not check_file.exists() or json.loads(check_file.read_text(encoding="utf-8")) != json.loads(json.dumps(result)):
-        failures.append("published/check.json differs from this check's results; run scripts/build.py")
+    same_platform = build.get("platform") == ws.platform_tag()
+    if not same_platform:
+        rendered = {item["file"] for item in result["exports"]}
+        for export in part["exports"]:
+            stl = folder / export["file"]
+            if stl.exists() and export["file"] in rendered and ws.triangles(stl) != ws.triangles(render_path(tmp, part, export)):
+                failures.append(f"published/{export['file']} differs from a fresh render")
+    published = ws.read_published(part, "check.json")
+    if published is not None:
+        fresh = json.loads(json.dumps(result))
+        if not (published == fresh if same_platform else close(published, fresh)):
+            failures.append("published/check.json differs from this check's results; run scripts/build.py")
     size = sum(path.stat().st_size for path in folder.rglob("*") if path.is_file())
     if size > ws.PUBLISHED_BUDGET:
         failures.append(f"published/ is {size} bytes, the budget is {ws.PUBLISHED_BUDGET}")
@@ -202,12 +195,12 @@ def main() -> int:
             tmp = Path(folder)
             result = {"id": part["id"], "openscad": version, "exports": check_exports(part, tmp, pool, failures),
                       "probes": check_probes(part, tmp, pool, failures)}
-        results_file = ws.CHECK_RESULTS / f"{part['id']}.json"
-        results_file.unlink(missing_ok=True)
-        if not failures:
-            results_file.write_text(json.dumps(result, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
-        if part.get("published"):
-            check_published(part, result, failures)
+            results_file = ws.CHECK_RESULTS / f"{part['id']}.json"
+            results_file.unlink(missing_ok=True)
+            if not failures:
+                results_file.write_text(json.dumps(result, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+            if part.get("published"):
+                check_published(part, result, tmp, failures)
         for failure in failures:
             print(f"FAIL {part['id']}: {failure}")
         failed = failed or bool(failures)

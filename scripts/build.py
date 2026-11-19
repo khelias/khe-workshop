@@ -29,7 +29,8 @@ def build(part: dict) -> None:
         raise SystemExit(f"FAIL {part['id']}: run scripts/check.py first")
     shutil.copyfile(results, folder / "check.json")
     (folder / "build.json").write_text(json.dumps({
-        "openscad": ws.openscad_version(), "source_sha256": ws.sha256(source)}, indent=1) + "\n", encoding="utf-8")
+        "openscad": ws.openscad_version(), "platform": ws.platform_tag(),
+        "source_sha256": ws.sha256(source)}, indent=1) + "\n", encoding="utf-8")
 
 
 def main() -> int:

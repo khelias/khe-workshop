@@ -13,13 +13,20 @@ This repo's own decisions: [docs/adr/](docs/adr/).
 - `python3 scripts/check.py` - renders every export, checks the mesh, the bed and
   the probes, verifies published parts and searches the repo for private terms.
   Exit 0 on a pass, 1 on a failure naming the part, 2 when OpenSCAD is missing.
+  On the platform `build.json` names, the STL files and `check.json` compare byte for
+  byte; on another, under the same OpenSCAD version, the STL triangles compare with
+  vertices rounded to 0.001 mm and `check.json` without its hashes, numbers within 0.001.
 - `python3 scripts/build.py` - writes `published/` for parts marked published.
 - `python3 scripts/replay.py <gcode> --part <id>` - turns printed G-code into
   `build/replay/<id>.bin.gz`, within 1.5 MB. G-code stays out of git.
-- `python3 scripts/site_build.py <out> [--preview]` - writes the room's pages.
-  `--preview` includes unpublished parts; without it the build fails when no part
-  is published. Marker comments (`khe:head`, `khe:header`, `khe:footer`,
-  `khe:consent`) are where khe-sites adds the family shell.
+- `python3 scripts/site_build.py <out> [--preview] [--base /workshop/]` - writes the
+  room's pages. `--preview` includes unpublished parts; without it the build verifies
+  each published part's files and proof and fails when none is published. `--base`
+  is how khe-sites builds the room: root-relative URLs in the pages and the modules'
+  imports, so its stamper versions them, `?v=` on the data files, and no language
+  link of its own, since the site header switches language. Marker comments
+  (`khe:head`, `khe:header`, `khe:footer`, `khe:consent`) are where khe-sites adds
+  the family shell.
 - `node --test web/test/*.test.mjs` - the decoder, the slider and the loaders.
 - `npm run -s lint` - the family design check, against an empty baseline.
 
@@ -59,5 +66,12 @@ To publish a part: run the check, set `published: true` and fill `proof`
 (`printed` as `YYYY-MM-DD`, `use` in et and en, an optional `photo`;
 [ADR-002](docs/adr/002-the-print-and-its-use-are-the-proof.md)), write the
 replay, run `scripts/build.py`, then run the check again.
+
+## Automated writers
+
+Renovate ([estate
+ADR-007](https://github.com/khelias/khe-architecture/blob/main/decisions/007-automated-writers.md))
+automerges GitHub Actions minor and patch updates, digests and pins (`renovate.json`),
+never `@khelias/ui`. The way back is to revert its commit on `main` and push.
 
 This repo never starts a print and sends the printer nothing but read requests.

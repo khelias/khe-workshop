@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Write the room's static pages: an index and one page per part, in Estonian and English.
 
-Without --preview only published parts are built, and the build fails when there are none.
+Without --preview only published parts are built, each verified first, and the build fails when
+there are none. With --base the pages and modules use root-relative URLs under that path, and
+data URLs carry a content version, for a site that caches by URL.
 """
 from __future__ import annotations
 
@@ -10,6 +12,8 @@ import datetime
 import functools
 import html
 import json
+import posixpath
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -19,9 +23,12 @@ import replay as replay_format  # noqa: E402
 import workshop as ws  # noqa: E402
 
 LANGS = ("et", "en")
+PREFIX = {"et": "", "en": "en/"}
 MONTHS = ("January", "February", "March", "April", "May", "June", "July", "August", "September",
           "October", "November", "December")
 SOURCE_URL = "https://github.com/khelias/khe-workshop/blob/main/parts"
+# Rewritten so khe-sites' stamper, which versions only root-relative URLs, reaches every module.
+SPECIFIER = re.compile(r"""(\b(?:from|import)\s*\(?\s*)(['"])(\.\.?/[^'"\s]+)\2""")
 LICENCES = {
     "CC-BY-4.0": ("CC BY 4.0", "https://creativecommons.org/licenses/by/4.0/"),
     "CC-BY-NC-4.0": ("CC BY-NC 4.0", "https://creativecommons.org/licenses/by-nc/4.0/"),
@@ -133,15 +140,48 @@ def use_record(part: dict, lang: str) -> str:
     return f'<p>{esc(printed)} {esc(proof["use"][lang])}</p>'
 
 
+@functools.cache
+def version(path: Path) -> str:
+    return ws.sha256(path)[:10]
+
+
 def photo_name(part: dict) -> str | None:
     """A photo appears only for a published part."""
     return (part.get("proof") or {}).get("photo") if part.get("published") else None
 
 
 class Site:
-    def __init__(self, out: Path, preview: bool) -> None:
+    def __init__(self, out: Path, preview: bool, base: str | None = None) -> None:
         self.out = out
+        self.base = base
         self.parts = [part for part in ws.load_parts() if preview or part.get("published")]
+        if not preview:
+            for part in self.parts:
+                problems = ws.published_problems(part)
+                if problems:
+                    raise SystemExit(f"FAIL {part['id']}: {'; '.join(problems)}")
+
+    def link(self, depth: int, path: str = "") -> str:
+        """The URL of a path below the room's root, from a page `depth` folders down."""
+        url = (self.base or "../" * depth) + path
+        return url or "./"
+
+    def data_link(self, part: dict, depth: int, name: str) -> str:
+        url = self.link(depth, f"data/{part['id']}/{name}")
+        return f"{url}?v={version(self.out / 'data' / part['id'] / name)}" if self.base else url
+
+    def root_imports(self, file: Path) -> None:
+        """Rewrite a copied module's relative specifiers to root-relative ones under the base."""
+        here = self.base + file.parent.relative_to(self.out).as_posix() + "/"
+
+        def rooted(match: re.Match) -> str:
+            target = posixpath.normpath(posixpath.join(here, match[3]))
+            inside = target.startswith(self.base) and (self.out / target[len(self.base):]).is_file()
+            if not inside:
+                raise SystemExit(f"FAIL: {file.relative_to(self.out)} imports {match[3]}, which the build did not write")
+            return f"{match[1]}{match[2]}{target}{match[2]}"
+
+        file.write_text(SPECIFIER.sub(rooted, file.read_text(encoding="utf-8")), encoding="utf-8")
 
     def results(self, part: dict) -> dict:
         path = part["_dir"] / "published" / "check.json" if part.get("published") else ws.CHECK_RESULTS / f"{part['id']}.json"
@@ -171,9 +211,13 @@ class Site:
                 if done.problems or done.empty:
                     raise SystemExit(f"FAIL {part['id']}: {export['id']} did not render cleanly")
 
-    def page(self, lang: str, depth: int, title: str, description: str, other_href: str, body: str) -> str:
-        up = "../" * depth
+    def page(self, lang: str, depth: int, title: str, description: str, paths: dict[str, str], body: str) -> str:
+        """`paths` holds the page's path below the room's root in each language."""
         t = TEXT[lang]
+        other = "en" if lang == "et" else "et"
+        alternates = "\n".join(f'<link rel="alternate" hreflang="{code}" href="{esc(self.link(depth, paths[code]))}">' for code in LANGS)
+        switch = "" if self.base else (f'<p class="room__lang"><a href="{esc(self.link(depth, paths[other]))}" '
+                                       f'lang="{other}">{t["other"]}</a></p>\n')
         return f"""<!doctype html>
 <html lang="{lang}" data-room="workshop">
 <head>
@@ -181,15 +225,15 @@ class Site:
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>{esc(title)}</title>
 <meta name="description" content="{esc(description)}">
+{alternates}
 <!-- khe:head -->
-<link rel="stylesheet" href="{up}assets/src/room.css">
-<script type="module" src="{up}assets/src/main.js"></script>
+<link rel="stylesheet" href="{self.link(depth, 'assets/src/room.css')}">
+<script type="module" src="{self.link(depth, 'assets/src/main.js')}"></script>
 </head>
 <body>
 <!-- khe:header -->
 <main class="room">
-<p class="room__lang"><a href="{esc(other_href)}" lang="{'en' if lang == 'et' else 'et'}">{t['other']}</a></p>
-{body}
+{switch}{body}
 </main>
 <!-- khe:footer -->
 <!-- khe:consent -->
@@ -199,10 +243,12 @@ class Site:
 
     def index(self, lang: str) -> str:
         t = TEXT[lang]
+        prefix = PREFIX[lang]
+        depth = prefix.count("/")
         rows = []
         for part in self.parts:
             meta = replay_meta(self.replay_file(part))
-            href = f"{part['id']}/"
+            href = self.link(depth, f"{prefix}{part['id']}/")
             facts = f"{meta['total_layers']} {t['layers'].lower()}, {duration(meta['print_seconds'])}"
             rows.append(f"""<li class="row">
 <a class="row__link" href="{href}">
@@ -221,16 +267,15 @@ class Site:
 <ul class="rows">
 {chr(10).join(rows)}
 </ul>"""
-        other = "en/" if lang == "et" else "../"
-        return self.page(lang, 0 if lang == "et" else 1, t["room"], t["lead"], other, body)
+        return self.page(lang, depth, t["room"], t["lead"], PREFIX, body)
 
-    def photo(self, part: dict, lang: str, up: str) -> str:
+    def photo(self, part: dict, lang: str, depth: int) -> str:
         photo = photo_name(part)
         if not photo:
             return ""
-        return f'<img src="{up}data/{part["id"]}/{esc(photo)}" alt="{TEXT[lang]["photo"]}" loading="lazy">'
+        return f'<img src="{esc(self.data_link(part, depth, photo))}" alt="{TEXT[lang]["photo"]}" loading="lazy">'
 
-    def stage(self, part: dict, lang: str, up: str, meta: dict) -> str:
+    def stage(self, part: dict, lang: str, depth: int, meta: dict) -> str:
         t = TEXT[lang]
         stage_file = next(item["file"] for item in part["exports"] if item["id"] == part["stage_export"])
         last = len(meta["layers"])
@@ -241,7 +286,7 @@ class Site:
             top = {"above": meta["layers"][-1][0] + 0.05, "colour": after[0]["colour"],
                    "label": part["replay"]["after_label"][lang]}
         config = {
-            "lang": lang, "stl": f"{up}data/{part['id']}/{stage_file}", "replay": f"{up}data/{part['id']}/replay.bin.gz",
+            "lang": lang, "stl": self.data_link(part, depth, stage_file), "replay": self.data_link(part, depth, "replay.bin.gz"),
             "rotate": part["replay"]["rotate_deg"], "colour": meta["colour"],
             "top": top, "bed": ws.BED_MM, "text": t["stage"],
         }
@@ -252,7 +297,7 @@ class Site:
 <script type="application/json" data-stage-config>{data}</script>
 <div class="stage__view">
 <canvas class="stage__canvas"></canvas>
-<div class="stage__fallback">{self.photo(part, lang, up)}<p>{t['nowebgl']}</p></div>
+<div class="stage__fallback">{self.photo(part, lang, depth)}<p>{t['nowebgl']}</p></div>
 <noscript><p class="stage__noscript">{t['nowebgl']}</p></noscript>
 <p class="stage__status" data-stage-status role="status" hidden></p>
 </div>
@@ -307,8 +352,8 @@ class Site:
 
     def part_page(self, part: dict, lang: str) -> str:
         t = TEXT[lang]
-        depth = 1 if lang == "et" else 2
-        up = "../" * depth
+        prefix = PREFIX[lang]
+        depth = 1 + prefix.count("/")
         meta = replay_meta(self.replay_file(part))
         results = self.results(part)
         stage_result = next(item for item in results["exports"] if item["id"] == part["stage_export"])
@@ -323,11 +368,11 @@ class Site:
                   (t["infill"], settings["infill"]), (t["walls"], settings["walls"]),
                   (t["supports"], t["yes"] if settings["supports"] else t["no"])]
         fact_rows = "".join(f'<div><dt>{esc(name)}</dt><dd class="fact">{esc(value)}</dd></div>' for name, value in facts if value)
-        photo = self.photo(part, lang, up)
+        photo = self.photo(part, lang, depth)
         photo_html = f'<figure class="photo">{photo}</figure>' if photo else ""
         note = part["replay"].get("note")
         note_html = f'<p class="note">{esc(note[lang])}</p>' if note else ""
-        files = "".join(f'<li><a href="{up}data/{part["id"]}/{esc(item["file"])}" download>{esc(item["title"][lang])}</a> <span class="fact">STL</span></li>'
+        files = "".join(f'<li><a href="{esc(self.data_link(part, depth, item["file"]))}" download>{esc(item["title"][lang])}</a> <span class="fact">STL</span></li>'
                         for item in part["exports"])
         files += f'<li><a href="{SOURCE_URL}/{part["id"]}/{esc(part["source"])}">{t["source"]}</a></li>'
         name, url = LICENCES[part["licence"]]
@@ -337,12 +382,12 @@ class Site:
             links = ", ".join(f'<a href="{esc(link["url"])}">{esc(link["label"])}</a>' for link in credit["links"])
             credit_html = f"<p>{esc(credit[lang])} {links}</p>"
         body = f"""<header class="room__head">
-<p class="label"><a href="../">{t['back']}</a></p>
+<p class="label"><a href="{self.link(depth, prefix)}">{t['back']}</a></p>
 <h1>{esc(part['title'][lang])}</h1>
 <p class="lead">{esc(part['summary'][lang])}</p>
 <p class="room__action"><a class="button" href="#files">{t['download']}</a></p>
 </header>
-{self.stage(part, lang, up, meta)}
+{self.stage(part, lang, depth, meta)}
 {note_html}
 <div class="blocks">
 <section class="block">
@@ -363,14 +408,17 @@ class Site:
 {credit_html}
 </section>
 </div>"""
-        other = f"../en/{part['id']}/" if lang == "et" else f"../../{part['id']}/"
-        return self.page(lang, depth, f"{part['title'][lang]} | {t['room']}", part["summary"][lang], other, body)
+        paths = {code: f"{PREFIX[code]}{part['id']}/" for code in LANGS}
+        return self.page(lang, depth, f"{part['title'][lang]} | {t['room']}", part["summary"][lang], paths, body)
 
     def build(self) -> None:
         assets = self.out / "assets"
         shutil.rmtree(assets, ignore_errors=True)
         shutil.copytree(ws.ROOT / "web" / "src", assets / "src")
         shutil.copytree(ws.ROOT / "web" / "vendor", assets / "vendor")
+        if self.base:
+            for module in sorted(assets.rglob("*.js")):
+                self.root_imports(module)
         for part in self.parts:
             self.copy_data(part)
         for lang in LANGS:
@@ -387,10 +435,13 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("out", type=Path)
     parser.add_argument("--preview", action="store_true", help="include parts that are not published")
+    parser.add_argument("--base", help="the root-relative path the room is served at, such as /workshop/")
     args = parser.parse_args()
+    if args.base is not None and not re.fullmatch(r"/(?:[\w-]+/)*", args.base):
+        parser.error("--base is a root-relative path that starts and ends with /")
     if args.preview and not ws.require_openscad():
         return 2
-    site = Site(args.out, args.preview)
+    site = Site(args.out, args.preview, args.base)
     if not site.parts:
         print("FAIL: no part is published, so there is nothing to build", file=sys.stderr)
         return 1
