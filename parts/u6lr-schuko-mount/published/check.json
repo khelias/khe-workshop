@@ -1,0 +1,46 @@
+{
+ "id": "u6lr-schuko-mount",
+ "openscad": "2026.10.11",
+ "exports": [
+  {
+   "id": "mount",
+   "file": "u6lr-schuko-mount.stl",
+   "triangles": 4750,
+   "size_mm": [
+    93.775,
+    136.0,
+    34.0
+   ],
+   "volume_cm3": 87.2,
+   "nonmanifold_edges": 4,
+   "sha256": "8fb2ad7c7318353e6f26eef0e5e4a2f32c8a6be91d54983444811095efac6e3d"
+  },
+  {
+   "id": "plug-test",
+   "file": "u6lr-plug-test.stl",
+   "triangles": 852,
+   "size_mm": [
+    52.0,
+    52.0,
+    18.5
+   ],
+   "volume_cm3": 20.8,
+   "nonmanifold_edges": 0,
+   "sha256": "25f295677af6cd53945dd7f30a00787f9d3b9e15b089427145753f7bb8b592bf"
+  },
+  {
+   "id": "lock-test",
+   "file": "u6lr-lock-test.stl",
+   "triangles": 3536,
+   "size_mm": [
+    94.0,
+    94.0,
+    13.5
+   ],
+   "volume_cm3": 43.6,
+   "nonmanifold_edges": 0,
+   "sha256": "7f1e88edff1571562891389007f99778235a53358aa7ff87c3b39b90f72147fb"
+  }
+ ],
+ "probes": []
+}

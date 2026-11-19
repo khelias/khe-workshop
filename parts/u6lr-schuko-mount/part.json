@@ -19,8 +19,14 @@
     ]
   },
   "source": "u6lr-schuko-mount.scad",
-  "published": false,
-  "proof": null,
+  "published": true,
+  "proof": {
+    "printed": "2026-10-24",
+    "use": {
+      "et": "Hoiab meie UniFi U6-LR pääsupunkti seinal pistikupesas.",
+      "en": "Holds our UniFi U6-LR access point on the wall, in a socket."
+    }
+  },
   "exports": [
     { "id": "mount", "file": "u6lr-schuko-mount.stl", "defines": {}, "title": { "et": "Hoidik", "en": "Mount" } },
     { "id": "plug-test", "file": "u6lr-plug-test.stl", "defines": { "part": "plug_test" }, "title": { "et": "Pistiku proov", "en": "Plug test" } },
