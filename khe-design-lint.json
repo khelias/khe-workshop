@@ -1,0 +1,6 @@
+{
+  "include": ["web/src/**", "scripts/site_build.py"],
+  "exclude": ["web/vendor/**"],
+  "content": [],
+  "baseline": "khe-design-lint-baseline.json"
+}

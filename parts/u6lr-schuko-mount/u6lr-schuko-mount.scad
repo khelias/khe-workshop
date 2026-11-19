@@ -1,5 +1,6 @@
 // Licence: CC BY-NC 4.0. The twist-lock profile is measured from Printables model
-// 789473 by Peter H (CC BY-NC), https://www.printables.com/model/789473
+// 789473 by Peter H, https://www.printables.com/model/789473, itself a remix of
+// model 323661 by magu, https://www.printables.com/model/323661. Both are CC BY-NC 4.0.
 //
 // U6-LR holder that plugs into a Schuko (CEE 7/3) socket. One printed part,
 // no screws, no pins.

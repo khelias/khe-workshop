@@ -1,0 +1,113 @@
+import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
+import { buildToolpaths, decodeReplay, formatDuration, layerAt, parseReplay, sliderToSeconds, verticesAt } from '../src/replay.js';
+import { parseStl, placeOnBed } from '../src/stl.js';
+
+const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+
+const SAMPLE = `; estimated printing time (normal mode) = 1h 0m 0s
+; filament_colour = #000000;#FFFFFF
+; total layers count = 3
+; filament used [g] = 1.5, 0.5
+T0
+M83
+G1 X1 Y1 E1
+;TIME_ELAPSED:100
+;LAYER_CHANGE
+;Z:0.2
+;TYPE:Outer wall
+G1 X10 Y10 F3000
+G1 X20 Y10 E1
+G3 X30 Y20 I0 J10 E1
+;TYPE:Sparse infill
+G1 X30 Y30 E1
+;TIME_ELAPSED:1100
+;LAYER_CHANGE
+;:0.4
+;TYPE:Outer wall
+G1 X10 Y30 E1
+;TIME_ELAPSED:2100
+;LAYER_CHANGE
+;:0.6
+T1
+;TYPE:Outer wall
+G1 X50 Y50 E1
+`;
+
+function encodeSample(lastLayer) {
+  const folder = mkdtempSync(join(tmpdir(), 'replay-test-'));
+  const source = join(folder, 'sample.txt');
+  const out = join(folder, 'sample.bin.gz');
+  writeFileSync(source, SAMPLE);
+  execFileSync('python3', [join(root, 'scripts', 'replay.py'), source, '--last-layer', String(lastLayer), '--out', out], { stdio: 'pipe' });
+  return new Uint8Array(readFileSync(out));
+}
+
+test('a replay round-trips from G-code, arcs included, and stops at the last layer', async () => {
+  const { meta, kinds, xs, ys } = await decodeReplay(encodeSample(2));
+  assert.equal(meta.layers.length, 2);
+  assert.deepEqual(meta.layers.map((layer) => layer[0]), [0.2, 0.4]);
+  assert.equal(meta.total_layers, 3);
+  assert.equal(meta.seconds, 2100);
+  assert.equal(meta.filament_g, 2);
+  assert.equal(meta.colour, '#000000');
+  assert.deepEqual(meta.colour_changes, [{ layer: 3, seconds: 2100, colour: '#FFFFFF' }]);
+  const end = meta.layers[1][1] - 2;
+  assert.ok(Math.abs(xs[end] - 30) < 0.011 && Math.abs(ys[end] - 20) < 0.011, 'the arc ends where the G-code says');
+  assert.ok(end - meta.layers[0][1] > 3, 'the arc was tessellated');
+  assert.equal(kinds[0], 0, 'the travel to the first wall is not drawn');
+  assert.ok(Math.max(...xs) <= 30.01, 'nothing from the left-out layer is present');
+});
+
+test('toolpaths are centred on the walls and turned as printed', async () => {
+  const replay = await decodeReplay(encodeSample(2));
+  const { all, outer } = buildToolpaths(replay, 90, () => [255, 255, 255]);
+  assert.equal(all.layerVertex.length, 3);
+  assert.equal(all.layerVertex[2], all.positions.length / 3);
+  assert.ok(outer.positions.length < all.positions.length);
+  const [minX, minY, maxX, maxY] = replay.meta.walls;
+  const x = 10 - (minX + maxX) / 2;
+  const y = 10 - (minY + maxY) / 2;
+  assert.ok(Math.abs(all.positions[0] - -y) < 0.02 && Math.abs(all.positions[1] - x) < 0.02);
+});
+
+test('the slider maps time to the layer being printed', () => {
+  const layers = [[0.2, 0, 100], [0.4, 10, 1100], [0.6, 20, 2100]];
+  assert.equal(sliderToSeconds(500, 1000, 3100), 1550);
+  assert.deepEqual(layerAt(layers, 3100, 0), { index: 0, fraction: 0 });
+  assert.deepEqual(layerAt(layers, 3100, 600), { index: 0, fraction: 0.5 });
+  assert.deepEqual(layerAt(layers, 3100, 1100), { index: 1, fraction: 0 });
+  assert.deepEqual(layerAt(layers, 3100, 3100), { index: 2, fraction: 1 });
+  assert.deepEqual(layerAt(layers, 3100, 9999), { index: 2, fraction: 1 });
+  assert.deepEqual(verticesAt(new Uint32Array([0, 10, 30, 40]), { index: 1, fraction: 0.5 }), { start: 10, upTo: 20 });
+});
+
+test('durations read in hours and minutes', () => {
+  assert.equal(formatDuration(59), '0 min');
+  assert.equal(formatDuration(15120), '4 h 12 min');
+});
+
+test('a loader given the landing page reports a plain error', async () => {
+  const html = new TextEncoder().encode('<!doctype html><html><body>khe.ee</body></html>');
+  await assert.rejects(decodeReplay(html), /not replay data/);
+  assert.throws(() => parseReplay(html), /not replay data/);
+  assert.throws(() => parseStl(html), /not a binary STL/);
+});
+
+test('an STL is read and placed on the bed', () => {
+  const bytes = new Uint8Array(84 + 50);
+  const view = new DataView(bytes.buffer);
+  view.setUint32(80, 1, true);
+  [10, 10, 5, 20, 10, 5, 10, 30, 7].forEach((value, index) => view.setFloat32(84 + 12 + index * 4, value, true));
+  const mesh = parseStl(bytes);
+  assert.equal(mesh.count, 1);
+  const placed = placeOnBed(mesh, null);
+  assert.deepEqual(placed.size, [10, 20, 2]);
+  assert.equal(placed.body.positions[2], 0);
+  assert.equal(placed.top.positions.length, 0);
+});

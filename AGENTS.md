@@ -14,6 +14,14 @@ This repo's own decisions: [docs/adr/](docs/adr/).
   the probes, verifies published parts and searches the repo for private terms.
   Exit 0 on a pass, 1 on a failure naming the part, 2 when OpenSCAD is missing.
 - `python3 scripts/build.py` - writes `published/` for parts marked published.
+- `python3 scripts/replay.py <gcode> --part <id>` - turns printed G-code into
+  `build/replay/<id>.bin.gz`, within 1.5 MB. G-code stays out of git.
+- `python3 scripts/site_build.py <out> [--preview]` - writes the room's pages.
+  `--preview` includes unpublished parts; without it the build fails when no part
+  is published. Marker comments (`khe:head`, `khe:header`, `khe:footer`,
+  `khe:consent`) are where khe-sites adds the family shell.
+- `node --test web/test/*.test.mjs` - the decoder, the slider and the loaders.
+- `npm run -s lint` - the family design check, against an empty baseline.
 
 The scripts use the Python standard library and OpenSCAD only.
 
@@ -23,6 +31,9 @@ The scripts use the Python standard library and OpenSCAD only.
 - `parts/<id>/<id>.scad` - the public source
 - `parts/<id>/published/` - generated, only for a published part
 - `scripts/` - the check and the builders; `workshop.py` holds what they share
+- `web/src/` - the room: plain ES modules and CSS, served as they are
+- `web/vendor/three/` - three.js as published on npm; only `OrbitControls.js` has its
+  import path rewritten, because the page uses no import map
 - `build/` - generated and ignored: check results, replays, previews
 
 ## Family data stays out

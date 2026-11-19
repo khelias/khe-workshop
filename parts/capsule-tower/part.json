@@ -22,12 +22,17 @@
   "allowed_nonmanifold_edges": 0,
   "replay": {
     "last_layer": 1238,
+    "rotate_deg": 90,
+    "after_label": { "et": "valge tempel", "en": "stamp in white" },
     "note": {
-      "et": "Kordus on päris prinditöö kuni kihini 1238. Viimased neli kihti olid pere oma tempel, nii et need on siit välja jäetud ja nende asemel on avalik tempel.",
+      "et": "Siin on päris prinditöö kuni kihini 1238. Viimased neli kihti olid pere oma tempel, need jäid välja ja nende asemel on avalik tempel.",
       "en": "The replay is the real print up to layer 1238. The last four layers were the family's own stamp, so they are left out and the public stamp appears instead."
     }
   },
   "probes": {
+    "variant_heading": { "et": "Kapsel", "en": "Capsule" },
+    "value_heading": { "et": "Vaba ruumi küljel", "en": "Side clearance" },
+    "each": { "et": "Iga kapsliga kontrolliti:", "en": "Tested with each capsule:" },
     "variants": [
       { "id": "rim-44", "label": { "et": "Serv 44 mm", "en": "44 mm rim" }, "defines": { "cap_rim": 44, "cap_body": 39.5, "cap_h": 26.6 } },
       { "id": "rim-44-8", "label": { "et": "Serv 44,8 mm", "en": "44.8 mm rim" }, "defines": { "cap_rim": 44.8, "cap_body": 39.5, "cap_h": 26.6 } },
@@ -38,14 +43,14 @@
       { "id": "side-clearance", "label": { "et": "Küljel on vähemalt 0,3 mm vaba ruumi", "en": "At least 0.3 mm of side clearance" }, "defines": { "mode": "clearance" }, "expect": "value", "log_key": "side_clearance", "min": 0.3 },
       { "id": "rest", "label": { "et": "Viis kapslit mahub ritta", "en": "Five capsules fit a row" }, "defines": { "mode": "rest" }, "expect": "clear" },
       { "id": "load", "label": { "et": "Kapsel kukub ülevalt sisse", "en": "A capsule drops in from the top" }, "defines": { "mode": "load" }, "expect": "clear" },
-      { "id": "held-1", "label": { "et": "Alumine kapsel püsib 1 mm tõmbel", "en": "Bottom capsule holds under a 1 mm pull" }, "defines": { "mode": "retain", "pull": 1 }, "expect": "contact" },
-      { "id": "held-2", "label": { "et": "Alumine kapsel püsib 2 mm tõmbel", "en": "Bottom capsule holds under a 2 mm pull" }, "defines": { "mode": "retain", "pull": 2 }, "expect": "contact" },
-      { "id": "held-upper-1", "label": { "et": "Teine kapsel püsib 1 mm tõmbel", "en": "Second capsule holds under a 1 mm pull" }, "defines": { "mode": "retain2", "pull": 1 }, "expect": "contact" },
-      { "id": "held-upper-2", "label": { "et": "Teine kapsel püsib 2 mm tõmbel", "en": "Second capsule holds under a 2 mm pull" }, "defines": { "mode": "retain2", "pull": 2 }, "expect": "contact" },
-      { "id": "lift-7", "label": { "et": "Tõuseb 7 mm", "en": "Lifts 7 mm" }, "defines": { "mode": "lift", "lift": 7 }, "expect": "clear" },
-      { "id": "out-7", "label": { "et": "Tuleb välja 7 mm tõstest", "en": "Comes out after a 7 mm lift" }, "defines": { "mode": "pull", "lift": 7 }, "expect": "clear" },
-      { "id": "lift-10", "label": { "et": "Tõuseb 10 mm", "en": "Lifts 10 mm" }, "defines": { "mode": "lift", "lift": 10 }, "expect": "clear" },
-      { "id": "out-10", "label": { "et": "Tuleb välja 10 mm tõstest", "en": "Comes out after a 10 mm lift" }, "defines": { "mode": "pull", "lift": 10 }, "expect": "clear" }
+      { "id": "held-1", "label": { "et": "Alumine kapsel ei tule 1 mm tõmbega välja", "en": "Bottom capsule holds under a 1 mm pull" }, "defines": { "mode": "retain", "pull": 1 }, "expect": "contact" },
+      { "id": "held-2", "label": { "et": "Alumine kapsel ei tule 2 mm tõmbega välja", "en": "Bottom capsule holds under a 2 mm pull" }, "defines": { "mode": "retain", "pull": 2 }, "expect": "contact" },
+      { "id": "held-upper-1", "label": { "et": "Teine kapsel ei tule 1 mm tõmbega välja", "en": "Second capsule holds under a 1 mm pull" }, "defines": { "mode": "retain2", "pull": 1 }, "expect": "contact" },
+      { "id": "held-upper-2", "label": { "et": "Teine kapsel ei tule 2 mm tõmbega välja", "en": "Second capsule holds under a 2 mm pull" }, "defines": { "mode": "retain2", "pull": 2 }, "expect": "contact" },
+      { "id": "lift-7", "label": { "et": "Alumise kapsli saab 7 mm üles tõsta", "en": "The bottom capsule lifts 7 mm" }, "defines": { "mode": "lift", "lift": 7 }, "expect": "clear" },
+      { "id": "out-7", "label": { "et": "Pärast 7 mm tõstmist tuleb kapsel välja", "en": "Comes out after a 7 mm lift" }, "defines": { "mode": "pull", "lift": 7 }, "expect": "clear" },
+      { "id": "lift-10", "label": { "et": "Alumise kapsli saab 10 mm üles tõsta", "en": "The bottom capsule lifts 10 mm" }, "defines": { "mode": "lift", "lift": 10 }, "expect": "clear" },
+      { "id": "out-10", "label": { "et": "Pärast 10 mm tõstmist tuleb kapsel välja", "en": "Comes out after a 10 mm lift" }, "defines": { "mode": "pull", "lift": 10 }, "expect": "clear" }
     ]
   }
 }

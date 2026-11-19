@@ -1,0 +1,11 @@
+{
+  "name": "khe-workshop",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "khe-design-lint"
+  },
+  "devDependencies": {
+    "@khelias/ui": "0.7.1"
+  }
+}
