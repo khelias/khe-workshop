@@ -10,8 +10,9 @@ This repo's own decisions: [docs/adr/](docs/adr/).
 
 ## Commands
 
-- `python3 scripts/check.py` - renders every export, checks the mesh, the bed and
-  the probes, verifies published parts and searches the repo for private terms.
+- `python3 scripts/check.py` - renders every export, checks the mesh, the bed, that
+  nothing starts printing in the air, and the probes, verifies published parts and
+  searches the repo for private terms.
   Exit 0 on a pass, 1 on a failure naming the part, 2 when OpenSCAD is missing.
   On the platform `build.json` names, the STL files and `check.json` compare byte for
   byte; on another, under the same OpenSCAD version, the STL surfaces compare within

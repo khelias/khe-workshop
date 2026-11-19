@@ -1,7 +1,8 @@
 // Yarn bowl for a ball of thick yarn (about 12 cm). Twisted ribs on the outside,
 // a smooth inside, and a yarn guide that runs down from the rim and turns up
-// into a hook. A maker's stamp is set into the underside, printed in a second
-// colour in the bottom three layers.
+// into a hook, printed with ribs across it that are broken off afterwards. A
+// maker's stamp is set into the underside, printed in a second colour in the
+// bottom three layers.
 
 /* Stamp. The family's own text is a private parameter set. */
 stamp_top = "KHE.EE";
@@ -71,10 +72,10 @@ function slot_path() = concat(
 slot = slot_path();
 hook_end = slot[len(slot) - 1];
 
-module yarn_slot() {
+module yarn_slot(extra = 0) {
     for (i = [0 : len(slot) - 2]) hull() {
-        cutter(slot[i][0], slot[i][1], slot[i][2]);
-        cutter(slot[i + 1][0], slot[i + 1][1], slot[i + 1][2]);
+        cutter(slot[i][0], slot[i][1], slot[i][2] + extra);
+        cutter(slot[i + 1][0], slot[i + 1][1], slot[i + 1][2] + extra);
     }
 }
 
@@ -185,13 +186,31 @@ module stamp_2d() {
 // thinnest strokes still print on the first layer.
 module stamp_flat() { mirror([1, 0, 0]) offset(r = 0.2) stamp_2d(); }
 
-module bowl() {
+// The bowl as it is used, once the ribs below are broken off.
+module finished() {
     difference() {
         body();
         yarn_slot();
         translate([0, 0, -1]) linear_extrude(1 + groove) stamp_flat();
     }
 }
+
+/* Breakaway ribs across the guide. The wall between the guide's arm and the
+   hook joins the rest of the bowl only above the hook, so without them its
+   first layers would be printed in the air. Thin enough to snap off with pliers. */
+rib_t = 0.8;
+rib_step = arc_deg(3, ro(z_low));  // about 3 mm apart
+rib_from = 10;     // degrees round, where the arm rises above the hook's top
+rib_overlap = 0.5; // how far each rib runs into the wall at both ends, so it joins without a seam
+// Counted down from the bottom of the turn, so one rib meets the tongue's lowest point.
+module support_ribs() intersection() {
+    body();
+    yarn_slot(2 * rib_overlap);
+    for (a = [slot_sweep : -rib_step : rib_from])
+        rotate([0, 0, a]) translate([0, -rib_t / 2, 0]) cube([r_belly + rib_amp + 1, rib_t, H]);
+}
+
+module bowl() { finished(); support_ribs(); }
 
 // The white part: it fills the stamp's cut exactly.
 module stamp_inlay() { linear_extrude(groove) stamp_flat(); }
@@ -201,5 +220,5 @@ else if (mode == "stamp") stamp_inlay();
 else if (mode == "clearance") echo(yarn_clearance = (slot_w - yarn_d) / 2);
 // the yarn, as a length across the wall, pulled straight up from the hook's
 // closed end or from the bottom of the turn
-else if (mode == "hold_end") intersection() { bowl(); cutter(hook_end[0], hook_end[1] + lift, yarn_d); }
-else if (mode == "hold_low") intersection() { bowl(); cutter(slot_sweep, z_low + lift, yarn_d); }
+else if (mode == "hold_end") intersection() { finished(); cutter(hook_end[0], hook_end[1] + lift, yarn_d); }
+else if (mode == "hold_low") intersection() { finished(); cutter(slot_sweep, z_low + lift, yarn_d); }

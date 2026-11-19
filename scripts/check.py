@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Check every part: clean renders, closed meshes, the K2's bed, fit probes, proof and public terms.
+"""Check every part: clean renders, closed meshes, the K2's bed, nothing started in the air, fit probes,
+proof and public terms.
 
 Exit 0 on a pass, 1 on a failure naming the part, 2 when OpenSCAD is missing.
 """
@@ -20,6 +21,56 @@ import workshop as ws  # noqa: E402
 
 SKIPPED_DIRS = {".git", "node_modules", "build", "__pycache__"}
 PRIVATE_SUFFIXES = {".3mf", ".gcode", ".zip"}
+
+
+FLAT_UM = 5  # heights this close, in micrometres, count as one flat patch
+
+
+def air_starts(path: Path) -> list[tuple[float, float, float]]:
+    """Points where a print would start in the air: above the bed, on a face that looks down, a
+    vertex, or a flat patch of vertices at one height (within FLAT_UM), with no neighbour lower than itself.
+    Coordinates in mm."""
+    index: dict[tuple, int] = {}
+    coords: list[tuple] = []
+    neighbours: list[set] = []
+    down: list[bool] = []
+    for corners in ws.triangles(path):
+        ids = []
+        for corner in corners:
+            if corner not in index:
+                index[corner] = len(coords)
+                coords.append(corner)
+                neighbours.append(set())
+                down.append(False)
+            ids.append(index[corner])
+        a, b, c = corners
+        u, v = [b[n] - a[n] for n in range(3)], [c[n] - a[n] for n in range(3)]
+        normal = (u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0])
+        # within 60 degrees of straight down
+        if normal[2] < -0.5 * sum(n * n for n in normal) ** 0.5:
+            for i in ids:
+                down[i] = True
+        for i in ids:
+            neighbours[i].update(ids)
+    if not coords:
+        return []
+    bed = min(corner[2] for corner in coords)
+    starts = []
+    seen: set[int] = set()
+    for first in range(len(coords)):
+        z = coords[first][2]
+        if first in seen or z <= bed + 50:
+            continue
+        patch, todo = {first}, [first]
+        while todo:
+            for n in neighbours[todo.pop()]:
+                if n not in patch and abs(coords[n][2] - z) <= FLAT_UM:
+                    patch.add(n)
+                    todo.append(n)
+        seen |= patch
+        if any(down[i] for i in patch) and not any(coords[n][2] < z - FLAT_UM for i in patch for n in neighbours[i]):
+            starts.append(tuple(value / 1000 for value in coords[min(patch)]))
+    return starts
 
 
 def render_path(tmp: Path, part: dict, export: dict) -> Path:
@@ -47,6 +98,11 @@ def check_exports(part: dict, tmp: Path, pool: ThreadPoolExecutor, failures: lis
             failures.append(f"{export['id']}: {mesh.nonmanifold_edges} open or non-manifold edges, {allowed} allowed")
         if max(mesh.size) > ws.BED_MM:
             failures.append(f"{export['id']}: {max(mesh.size)} mm does not fit the {ws.BED_MM:.0f} mm bed")
+        starts = air_starts(out)
+        if starts:
+            low = min(starts, key=lambda point: point[2])
+            failures.append(f"{export['id']}: {len(starts)} place(s) start printing in the air, the lowest at "
+                            f"x {low[0]:.1f}, y {low[1]:.1f}, z {low[2]:.1f} mm")
         results.append({"id": export["id"], "file": export["file"], "triangles": mesh.triangles,
                         "size_mm": list(mesh.size), "volume_cm3": mesh.volume_cm3,
                         "nonmanifold_edges": mesh.nonmanifold_edges, "sha256": ws.sha256(out)})
