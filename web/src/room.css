@@ -52,6 +52,13 @@ a { color: var(--ink); text-underline-offset: 3px; }
 a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; border-radius: 4px; }
 
 .room { padding-block: 24px 64px; }
+.site-footer {
+  --khe-footer-font: var(--sans);
+  --khe-footer-text: var(--muted);
+  --khe-footer-text-hover: var(--ink);
+  --khe-footer-focus: var(--room-text);
+  padding: 0 var(--gutter) max(2.5rem, env(safe-area-inset-bottom));
+}
 .room__lang, .room__head, .rows, .blocks, .note {
   width: min(1080px, 100% - 2 * var(--gutter));
   margin-inline: auto;
