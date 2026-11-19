@@ -1,6 +1,6 @@
 # ADR-001: Published parts carry their proof, in OpenSCAD, with generated data committed
 
-- **Status:** Accepted (2026-11-19)
+- **Status:** Accepted (2026-11-19); point 1 superseded by [ADR-002](002-the-print-and-its-use-are-the-proof.md)
 - **Related:** [estate ADR-043](https://github.com/khelias/khe-architecture/blob/main/decisions/043-household-parts-are-public-source-built-into-khe-sites.md)
 
 ## Context

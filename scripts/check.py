@@ -5,6 +5,7 @@ Exit 0 on a pass, 1 on a failure naming the part, 2 when OpenSCAD is missing.
 """
 from __future__ import annotations
 
+import datetime
 import gzip
 import json
 import os
@@ -101,9 +102,16 @@ def check_published(part: dict, result: dict, failures: list[str]) -> None:
         elif ws.sha256(stl) != fresh.get(export["file"]):
             failures.append(f"published/{export['file']} differs from a fresh render")
     proof = part.get("proof") or {}
-    for field in ("photo", "use", "printed"):
-        if not proof.get(field):
-            failures.append(f"proof field {field} is missing")
+    printed = str(proof.get("printed"))
+    try:
+        valid_date = bool(re.fullmatch(r"\d{4}-\d{2}-\d{2}", printed)) and bool(datetime.date.fromisoformat(printed))
+    except ValueError:
+        valid_date = False
+    if not valid_date:
+        failures.append("proof.printed is not a YYYY-MM-DD date")
+    use = proof.get("use") or {}
+    if not (isinstance(use, dict) and use.get("et") and use.get("en")):
+        failures.append("proof.use needs a sentence in et and en")
     if proof.get("photo") and not (folder / proof["photo"]).exists():
         failures.append(f"proof photo published/{proof['photo']} is missing")
     replay_file = folder / "replay.bin.gz"

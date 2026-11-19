@@ -6,6 +6,7 @@ Without --preview only published parts are built, and the build fails when there
 from __future__ import annotations
 
 import argparse
+import datetime
 import functools
 import html
 import json
@@ -18,6 +19,8 @@ import replay as replay_format  # noqa: E402
 import workshop as ws  # noqa: E402
 
 LANGS = ("et", "en")
+MONTHS = ("January", "February", "March", "April", "May", "June", "July", "August", "September",
+          "October", "November", "December")
 SOURCE_URL = "https://github.com/khelias/khe-workshop/blob/main/parts"
 LICENCES = {
     "CC-BY-4.0": ("CC BY 4.0", "https://creativecommons.org/licenses/by/4.0/"),
@@ -39,7 +42,7 @@ TEXT = {
         "closed": "{name}: suletud kuju, mahub printeri {bed} mm alusele.",
         "open": "{name}: mahub printeri {bed} mm alusele. {reason}",
         "nowebgl": "Kolmemõõtmeline vaade vajab JavaScripti ja WebGL-i, mida see brauser ei paku.",
-        "photo": "Foto prinditud detailist", "download": "Laadi alla",
+        "photo": "Foto prinditud detailist", "download": "Laadi alla", "printed": "Prinditud {date}.",
         "terms": {"CC-BY-4.0": "Võid seda kasutada, muuta ja jagada, kui nimetad autori.",
                   "CC-BY-NC-4.0": "Võid seda kasutada, muuta ja jagada, kui nimetad autorid, aga mitte ärilisel eesmärgil."},
         "colour_change": "Värvivahetus",
@@ -63,7 +66,7 @@ TEXT = {
         "closed": "{name}: a closed solid that fits the printer's {bed} mm bed.",
         "open": "{name}: fits the printer's {bed} mm bed. {reason}",
         "nowebgl": "The 3D view needs JavaScript and WebGL, which this browser does not offer.",
-        "photo": "A photo of the printed part", "download": "Download",
+        "photo": "A photo of the printed part", "download": "Download", "printed": "Printed {date}.",
         "terms": {"CC-BY-4.0": "You may use, change and share it if you credit the author.",
                   "CC-BY-NC-4.0": "You may use, change and share it if you credit the authors, but not commercially."},
         "colour_change": "Colour change",
@@ -114,6 +117,20 @@ def outline(path: Path) -> str:
     box = f"{low_x:.1f} {-high_y:.1f} {high_x - low_x:.1f} {high_y - low_y:.1f}"
     return (f'<svg class="row__outline" viewBox="{box}" aria-hidden="true" focusable="false">'
             f'<path d="{"".join(parts)}"/></svg>')
+
+
+def date_text(value: str, lang: str) -> str:
+    day = datetime.date.fromisoformat(value)
+    return f"{day.day}.{day.month}.{day.year}" if lang == "et" else f"{day.day} {MONTHS[day.month - 1]} {day.year}"
+
+
+def use_record(part: dict, lang: str) -> str:
+    """The published part's print date and use, the proof under its story."""
+    proof = part.get("proof") if part.get("published") else None
+    if not proof:
+        return ""
+    printed = TEXT[lang]["printed"].format(date=date_text(proof["printed"], lang))
+    return f'<p>{esc(printed)} {esc(proof["use"][lang])}</p>'
 
 
 def photo_name(part: dict) -> str | None:
@@ -331,6 +348,7 @@ class Site:
 <section class="block">
 <h2>{t['why']}</h2>
 <p>{esc(part['story'][lang])}</p>
+{use_record(part, lang)}
 {photo_html}
 </section>
 {self.proof(part, lang)}

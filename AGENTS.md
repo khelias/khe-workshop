@@ -55,7 +55,9 @@ A probe is a render whose result is declared in `part.json`: `clear` (nothing
 collides), `contact` (something does) or `value` (an `echo` of `log_key` is at
 least `min`). A part with non-manifold edges declares how many and why.
 
-To publish a part: run the check, set `published: true` and fill `proof`, write
-the replay, run `scripts/build.py`, then run the check again.
+To publish a part: run the check, set `published: true` and fill `proof`
+(`printed` as `YYYY-MM-DD`, `use` in et and en, an optional `photo`;
+[ADR-002](docs/adr/002-the-print-and-its-use-are-the-proof.md)), write the
+replay, run `scripts/build.py`, then run the check again.
 
 This repo never starts a print and sends the printer nothing but read requests.

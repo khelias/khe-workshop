@@ -7,8 +7,8 @@ is tested in the model.
 
 Töökoda, the room on [khe.ee](https://khe.ee) that will show these parts, lets a
 visitor turn a part, cut it open and scrub through its real print layer by layer.
-It is not live yet: a part is published only with a photo of the real print and a
-recorded use.
+It is not live yet: a part is published only once it has been printed and used,
+with its real print recorded.
 
 ## Run it
 
