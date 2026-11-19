@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      OPENSCAD_VERSION: 2026.10.11
+      # From files.openscad.org's published .sha256 for this AppImage.
+      OPENSCAD_SHA256: 35b7248e033563cbb6dc0dbe562ef37deeca13bc98de27f64ec9126f13ecad0c
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: '3.13'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Design check
+        run: npm ci && npm run -s lint
+
+      - name: Install OpenSCAD
+        working-directory: ${{ runner.temp }}
+        run: |
+          image="OpenSCAD-$OPENSCAD_VERSION-x86_64.AppImage"
+          curl -fsSL --retry 3 -o "$image" "https://files.openscad.org/snapshots/$image"
+          echo "$OPENSCAD_SHA256  $image" | sha256sum -c -
+          chmod +x "$image"
+          # The AppImage leaves out the graphics and font libraries a desktop has.
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends libegl1 libgl1 libopengl0 libglx0 libx11-6 \
+            libx11-xcb1 libxcb1 libdrm2 libexpat1 libfontconfig1 libfreetype6 libgbm1 libharfbuzz0b libwayland-client0
+          # The runner has no FUSE, and the check runs OpenSCAD in parallel, so it is extracted once.
+          "./$image" --appimage-extract > /dev/null
+          mkdir -p bin
+          ln -s "$RUNNER_TEMP/squashfs-root/AppRun" bin/openscad
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+
+      - name: Check the parts
+        run: openscad --version && python3 scripts/check.py
+
+      - name: Test the room
+        run: node --test web/test/*.test.mjs

@@ -27,7 +27,8 @@ This repo's own decisions: [docs/adr/](docs/adr/).
   link of its own, since the site header switches language. Marker comments
   (`khe:head`, `khe:header`, `khe:footer`, `khe:consent`) are where khe-sites adds
   the family shell.
-- `node --test web/test/*.test.mjs` - the decoder, the slider and the loaders.
+- `node --test web/test/*.test.mjs` - the decoder, the slider and the loaders, and a
+  `--base` build of the published parts.
 - `npm run -s lint` - the family design check, against an empty baseline.
 
 The scripts use the Python standard library and OpenSCAD only.
@@ -67,7 +68,13 @@ To publish a part: run the check, set `published: true` and fill `proof`
 [ADR-002](docs/adr/002-the-print-and-its-use-are-the-proof.md)), write the
 replay, run `scripts/build.py`, then run the check again.
 
-## Automated writers
+## CI and automated writers
+
+`.github/workflows/ci.yml` runs the design check, the check and the tests on a
+GitHub-hosted runner, with OpenSCAD from its checksummed Linux AppImage, extracted
+once. A new OpenSCAD version changes `OPENSCAD_VERSION` and `OPENSCAD_SHA256` there
+in the same commit as a rebuilt `published/`, since the check requires the version
+`build.json` names.
 
 Renovate ([estate
 ADR-007](https://github.com/khelias/khe-architecture/blob/main/decisions/007-automated-writers.md))
