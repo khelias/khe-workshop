@@ -14,8 +14,9 @@ This repo's own decisions: [docs/adr/](docs/adr/).
   the probes, verifies published parts and searches the repo for private terms.
   Exit 0 on a pass, 1 on a failure naming the part, 2 when OpenSCAD is missing.
   On the platform `build.json` names, the STL files and `check.json` compare byte for
-  byte; on another, under the same OpenSCAD version, the STL triangles compare with
-  vertices rounded to 0.001 mm and `check.json` without its hashes, numbers within 0.001.
+  byte; on another, under the same OpenSCAD version, the STL surfaces compare within
+  0.001 mm (a few small patches may be triangulated differently) and `check.json`
+  without its hashes and triangle counts, numbers within 0.001.
 - `python3 scripts/build.py` - writes `published/` for parts marked published.
 - `python3 scripts/replay.py <gcode> --part <id>` - turns printed G-code into
   `build/replay/<id>.bin.gz`, within 1.5 MB, from the part's `replay` settings.

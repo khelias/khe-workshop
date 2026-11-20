@@ -85,10 +85,12 @@ def check_probes(part: dict, tmp: Path, pool: ThreadPoolExecutor, failures: list
 
 
 def close(published: object, fresh: object) -> bool:
-    """Equal apart from sha256 fields, with numbers allowed to differ by 0.001."""
+    """Equal apart from sha256 and triangle counts, which follow the triangulation, with
+    numbers allowed to differ by 0.001."""
     if isinstance(published, dict) and isinstance(fresh, dict):
-        keys = published.keys() - {"sha256"}
-        return keys == fresh.keys() - {"sha256"} and all(close(published[key], fresh[key]) for key in keys)
+        skipped = {"sha256", "triangles"}
+        keys = published.keys() - skipped
+        return keys == fresh.keys() - skipped and all(close(published[key], fresh[key]) for key in keys)
     if isinstance(published, list) and isinstance(fresh, list):
         return len(published) == len(fresh) and all(map(close, published, fresh))
     if type(published) in (int, float) and type(fresh) in (int, float):
@@ -99,7 +101,7 @@ def close(published: object, fresh: object) -> bool:
 def check_published(part: dict, result: dict, tmp: Path, failures: list[str]) -> None:
     """The published STL files match check.json (ws.published_problems). On the platform
     published/ was built on, check.json equals this check's results, hashes included, so the
-    files equal a fresh render byte for byte; on another, the STL triangles and the results
+    files equal a fresh render byte for byte; on another, the STL surfaces and the results
     compare at 0.001 mm."""
     folder = part["_dir"] / "published"
     failures.extend(ws.published_problems(part))
@@ -114,7 +116,7 @@ def check_published(part: dict, result: dict, tmp: Path, failures: list[str]) ->
         rendered = {item["file"] for item in result["exports"]}
         for export in part["exports"]:
             stl = folder / export["file"]
-            if stl.exists() and export["file"] in rendered and ws.triangles(stl) != ws.triangles(render_path(tmp, part, export)):
+            if stl.exists() and export["file"] in rendered and not ws.same_surface(stl, render_path(tmp, part, export)):
                 failures.append(f"published/{export['file']} differs from a fresh render")
     published = ws.read_published(part, "check.json")
     if published is not None:

@@ -5,6 +5,7 @@ import datetime
 import functools
 import hashlib
 import json
+import math
 import os
 import platform
 import re
@@ -141,18 +142,87 @@ def read_mesh(path: Path) -> Mesh:
     return Mesh(kept, len(bad), size, round(abs(volume) / 1000, 1))
 
 
-def triangles(path: Path) -> list[tuple]:
+def triangles(path: Path) -> Counter:
     """The facets with vertices in micrometres, each turned to start at its lowest vertex so the
-    winding stays, then sorted: equal for the same mesh rendered on another platform. As in
+    winding stays, counted: equal for the same mesh rendered on another platform. As in
     read_mesh, a facet with two equal vertices is left out."""
-    found = []
+    found: Counter = Counter()
     for values in facets(path):
         corners = [tuple(round(value * 1000) for value in values[n:n + 3]) for n in (0, 3, 6)]
         if len(set(corners)) < 3:
             continue
         first = corners.index(min(corners))
-        found.append(tuple(corners[first:] + corners[:first]))
-    return sorted(found)
+        found[tuple(corners[first:] + corners[:first])] += 1
+    return found
+
+
+SURFACE_TOLERANCE_UM = 1
+_PATCH_LIMIT = 200
+
+
+def _sub(u, v) -> list:
+    return [x - y for x, y in zip(u, v)]
+
+
+def _dot(u, v) -> float:
+    return sum(x * y for x, y in zip(u, v))
+
+
+def _point_triangle(p: tuple, tri: tuple) -> float:
+    """The distance from a point to a triangle (Ericson, Real-Time Collision Detection 5.1.5)."""
+    a, b, c = tri
+    ab, ac, ap, bp, cp = _sub(b, a), _sub(c, a), _sub(p, a), _sub(p, b), _sub(p, c)
+    d1, d2 = _dot(ab, ap), _dot(ac, ap)
+    d3, d4 = _dot(ab, bp), _dot(ac, bp)
+    d5, d6 = _dot(ab, cp), _dot(ac, cp)
+    va, vb, vc = d3 * d6 - d5 * d4, d5 * d2 - d1 * d6, d1 * d4 - d3 * d2
+    if d1 <= 0 and d2 <= 0:
+        q = a
+    elif d3 >= 0 and d4 <= d3:
+        q = b
+    elif d6 >= 0 and d5 <= d6:
+        q = c
+    elif vc <= 0 and d1 >= 0 and d3 <= 0:
+        q = [a[i] + d1 / (d1 - d3) * ab[i] for i in range(3)]
+    elif vb <= 0 and d2 >= 0 and d6 <= 0:
+        q = [a[i] + d2 / (d2 - d6) * ac[i] for i in range(3)]
+    elif va <= 0 and d4 - d3 >= 0 and d5 - d6 >= 0:
+        w = (d4 - d3) / ((d4 - d3) + (d5 - d6))
+        q = [b[i] + w * (c[i] - b[i]) for i in range(3)]
+    elif va + vb + vc <= 0:
+        q = min((a, b, c), key=lambda corner: math.dist(p, corner))
+    else:
+        v, w = vb / (va + vb + vc), vc / (va + vb + vc)
+        q = [a[i] + ab[i] * v + ac[i] * w for i in range(3)]
+    return math.dist(p, q)
+
+
+def _open_edges(patch: list[tuple]) -> Counter:
+    """The directed edges no facet of the patch turns back on, so the winding counts."""
+    edges = Counter((t[i], t[(i + 1) % 3]) for t in patch for i in range(3))
+    return edges - Counter({(end, start): seen for (start, end), seen in edges.items()})
+
+
+def _samples(tri: tuple, steps: int = 8):
+    x, y, z = tri
+    for i in range(steps + 1):
+        for j in range(steps + 1 - i):
+            u, v = i / steps, j / steps
+            yield tuple(x[k] * (1 - u - v) + y[k] * u + z[k] * v for k in range(3))
+
+
+def same_surface(a: Path, b: Path) -> bool:
+    """Two STL files describe one surface within SURFACE_TOLERANCE_UM. Another platform's
+    floating point can triangulate a few small patches differently, so the facets that differ
+    must close the same holes, and points sampled over each patch must lie within the
+    tolerance of the other."""
+    first, second = triangles(a), triangles(b)
+    one, other = list((first - second).elements()), list((second - first).elements())
+    if len(one) > _PATCH_LIMIT or len(other) > _PATCH_LIMIT or _open_edges(one) != _open_edges(other):
+        return False
+    return all(any(_point_triangle(point, near) <= SURFACE_TOLERANCE_UM for near in against)
+               for patch, against in ((one, other), (other, one))
+               for tri in patch for point in _samples(tri))
 
 
 def read_published(part: dict, name: str) -> dict | None:
