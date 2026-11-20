@@ -24,52 +24,39 @@ PRIVATE_SUFFIXES = {".3mf", ".gcode", ".zip"}
 
 
 FLAT_UM = 5  # heights this close, in micrometres, count as one flat patch
+ON_BED_UM = 50  # vertices this close above the lowest one rest on the bed
 
 
 def air_starts(path: Path) -> list[tuple[float, float, float]]:
     """Points where a print would start in the air: above the bed, on a face that looks down, a
     vertex, or a flat patch of vertices at one height (within FLAT_UM), with no neighbour lower than itself.
     Coordinates in mm."""
-    index: dict[tuple, int] = {}
-    coords: list[tuple] = []
-    neighbours: list[set] = []
-    down: list[bool] = []
+    neighbours: dict[tuple, set] = {}
+    down: set[tuple] = set()
     for corners in ws.triangles(path):
-        ids = []
-        for corner in corners:
-            if corner not in index:
-                index[corner] = len(coords)
-                coords.append(corner)
-                neighbours.append(set())
-                down.append(False)
-            ids.append(index[corner])
-        a, b, c = corners
-        u, v = [b[n] - a[n] for n in range(3)], [c[n] - a[n] for n in range(3)]
+        u, v = ws.sub(corners[1], corners[0]), ws.sub(corners[2], corners[0])
         normal = (u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0])
-        # within 60 degrees of straight down
+        # a face within 60 degrees of flat and facing down prints on nothing below it
         if normal[2] < -0.5 * sum(n * n for n in normal) ** 0.5:
-            for i in ids:
-                down[i] = True
-        for i in ids:
-            neighbours[i].update(ids)
-    if not coords:
-        return []
-    bed = min(corner[2] for corner in coords)
+            down.update(corners)
+        for corner in corners:
+            neighbours.setdefault(corner, set()).update(corners)
+    bed = min((corner[2] for corner in neighbours), default=0)
     starts = []
-    seen: set[int] = set()
-    for first in range(len(coords)):
-        z = coords[first][2]
-        if first in seen or z <= bed + 50:
+    seen: set[tuple] = set()
+    for first in neighbours:
+        z = first[2]
+        if first in seen or z <= bed + ON_BED_UM:
             continue
         patch, todo = {first}, [first]
         while todo:
             for n in neighbours[todo.pop()]:
-                if n not in patch and abs(coords[n][2] - z) <= FLAT_UM:
+                if n not in patch and abs(n[2] - z) <= FLAT_UM:
                     patch.add(n)
                     todo.append(n)
         seen |= patch
-        if any(down[i] for i in patch) and not any(coords[n][2] < z - FLAT_UM for i in patch for n in neighbours[i]):
-            starts.append(tuple(value / 1000 for value in coords[min(patch)]))
+        if not down.isdisjoint(patch) and not any(n[2] < z - FLAT_UM for i in patch for n in neighbours[i]):
+            starts.append(tuple(value / 1000 for value in min(patch)))
     return starts
 
 

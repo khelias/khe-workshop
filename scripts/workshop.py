@@ -4,6 +4,7 @@ from __future__ import annotations
 import datetime
 import functools
 import hashlib
+import itertools
 import json
 import math
 import os
@@ -157,10 +158,11 @@ def triangles(path: Path) -> Counter:
 
 
 SURFACE_TOLERANCE_UM = 1
-_PATCH_LIMIT = 200
+_CELL_UM = 4000
+_SAMPLE_UM = 500
 
 
-def _sub(u, v) -> list:
+def sub(u, v) -> list:
     return [x - y for x, y in zip(u, v)]
 
 
@@ -171,7 +173,7 @@ def _dot(u, v) -> float:
 def _point_triangle(p: tuple, tri: tuple) -> float:
     """The distance from a point to a triangle (Ericson, Real-Time Collision Detection 5.1.5)."""
     a, b, c = tri
-    ab, ac, ap, bp, cp = _sub(b, a), _sub(c, a), _sub(p, a), _sub(p, b), _sub(p, c)
+    ab, ac, ap, bp, cp = sub(b, a), sub(c, a), sub(p, a), sub(p, b), sub(p, c)
     d1, d2 = _dot(ab, ap), _dot(ac, ap)
     d3, d4 = _dot(ab, bp), _dot(ac, bp)
     d5, d6 = _dot(ab, cp), _dot(ac, cp)
@@ -203,8 +205,10 @@ def _open_edges(patch: list[tuple]) -> Counter:
     return edges - Counter({(end, start): seen for (start, end), seen in edges.items()})
 
 
-def _samples(tri: tuple, steps: int = 8):
+def _samples(tri: tuple):
+    """Points over the facet, no more than _SAMPLE_UM apart along its edges."""
     x, y, z = tri
+    steps = max(2, math.ceil(max(math.dist(x, y), math.dist(y, z), math.dist(z, x)) / _SAMPLE_UM))
     for i in range(steps + 1):
         for j in range(steps + 1 - i):
             u, v = i / steps, j / steps
@@ -218,11 +222,31 @@ def same_surface(a: Path, b: Path) -> bool:
     tolerance of the other."""
     first, second = triangles(a), triangles(b)
     one, other = list((first - second).elements()), list((second - first).elements())
-    if len(one) > _PATCH_LIMIT or len(other) > _PATCH_LIMIT or _open_edges(one) != _open_edges(other):
+    # a few patches, not a different mesh, which would take minutes to sample
+    if len(one) + len(other) > sum(first.values()) // 20 or _open_edges(one) != _open_edges(other):
         return False
-    return all(any(_point_triangle(point, near) <= SURFACE_TOLERANCE_UM for near in against)
-               for patch, against in ((one, other), (other, one))
-               for tri in patch for point in _samples(tri))
+    for patch, against in ((one, other), (other, one)):
+        grid = _grid(against)
+        if not all(any(_point_triangle(point, near) <= SURFACE_TOLERANCE_UM for near in grid.get(_cell(point), ()))
+                   for tri in patch for point in _samples(tri)):
+            return False
+    return True
+
+
+def _cell(point) -> tuple:
+    return tuple(int(value // _CELL_UM) for value in point)
+
+
+def _grid(tris: list[tuple]) -> dict:
+    """Each triangle under every cell its box, grown by the tolerance, touches, so a point finds
+    every triangle within the tolerance in its own cell."""
+    grid: dict = {}
+    for tri in tris:
+        low = _cell([min(v[k] for v in tri) - SURFACE_TOLERANCE_UM for k in range(3)])
+        high = _cell([max(v[k] for v in tri) + SURFACE_TOLERANCE_UM for k in range(3)])
+        for cell in itertools.product(*(range(low[k], high[k] + 1) for k in range(3))):
+            grid.setdefault(cell, []).append(tri)
+    return grid
 
 
 def read_published(part: dict, name: str) -> dict | None:

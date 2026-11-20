@@ -5,15 +5,15 @@
   {
    "id": "bowl",
    "file": "yarn-bowl.stl",
-   "triangles": 135088,
+   "triangles": 137074,
    "size_mm": [
     200.815,
     205.632,
     113.2
    ],
-   "volume_cm3": 193.4,
+   "volume_cm3": 193.6,
    "nonmanifold_edges": 0,
-   "sha256": "f0731962559427d3304e19c8e74a4f447e3f36623ed772ad3e81122260f302de"
+   "sha256": "5794cf600beb9c26343783dd33732b70c75a78e83515d2d0ea7dcf77f0e1473b"
   },
   {
    "id": "stamp",
