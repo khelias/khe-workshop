@@ -6,16 +6,17 @@
     "en": "Estonia's land for the wall, with the islands and the sea in one piece."
   },
   "story": {
-    "et": "Maapind on Maa- ja Ruumiameti kõrgusmudelist mõõtkavas 1 : 800 000 ja kõrgused on umbes 28 korda võimendatud, muidu oleks Suur Munamägi vaid kaks prindikihti. Meri seob saared mandriga, Peipsi on sinine riigipiirini ja Ruhnu jäi välja, sest see oleks olnud eraldi tükk. Värv vahetub kihtide kaupa: meri on sinine, maa roheline ja üle 70 meetri pruun. Suur kaart koosneb neljast tahvlist, mis liimitakse tagant liblikakiiludega kokku, väike on üks print poole suurusega.",
-    "en": "The land comes from the Estonian Land Board's elevation model at 1 : 800,000, with heights raised about 28 times, or Suur Munamägi would be two print layers. The sea joins the islands to the mainland, Peipsi is blue up to the state border, and Ruhnu is left out, since it would have been a piece of its own. The colour changes by layer: the sea is blue, the land green and brown above 70 metres. The large map is four tiles glued together behind with butterfly keys; the small one is a single print at half the size."
+    "et": "Maapind on Maa- ja Ruumiameti kõrgusmudelist mõõtkavas 1 : 800 000 ja kõrgused on umbes 28 korda võimendatud, muidu oleks Suur Munamägi vaid kaks prindikihti. Meri seob saared mandriga, Peipsi on sinine riigipiirini ja Ruhnu jäi välja, sest see oleks olnud eraldi tükk. Värv vahetub kihtide kaupa: meri on sinine, maa roheline ja üle 70 meetri pruun. Suur kaart koosneb neljast tahvlist, mis liimitakse tagant liblikakiiludega kokku, väike on üks print poole suurusega. Kaardile saab lisada oma kirja: veekogu nimena Soome lahe kaarel või täpi ja nimena valitud kohas, süvistatuna nii, et põhjas paistab must kiht sinise mere ja valge maa all.",
+    "en": "The land comes from the Estonian Land Board's elevation model at 1 : 800,000, with heights raised about 28 times, or Suur Munamägi would be two print layers. The sea joins the islands to the mainland, Peipsi is blue up to the state border, and Ruhnu is left out, since it would have been a piece of its own. The colour changes by layer: the sea is blue, the land green and brown above 70 metres. The large map is four tiles glued together behind with butterfly keys; the small one is a single print at half the size. A label of the maker's choice can go along an arc in the Gulf of Finland, like a water name, or beside a dot at a chosen place, cut down so a black layer shows under the blue sea and white land."
   },
   "licence": "CC-BY-4.0",
   "credit": {
-    "et": "Digitaalne maapinnamudel 25 m, maakondade piirid ja ETAK-i tervikseisuveed: Maa- ja Ruumiamet, väljavõte 21.11.2026, avaandmete litsentsiga. Riigipiir Peipsil ja naabermaad: Natural Earth, avalik omand.",
-    "en": "Digital terrain model 25 m, county boundaries and ETAK whole standing waters: Republic of Estonia Land and Spatial Development Board, extracted 21.11.2026, under its open data licence. The border on Peipsi and the neighbouring land: Natural Earth, public domain.",
+    "et": "Digitaalne maapinnamudel 25 m, maakondade piirid ja ETAK-i tervikseisuveed: Maa- ja Ruumiamet, väljavõte 21.11.2026, avaandmete litsentsiga. Riigipiir Peipsil ja naabermaad: Natural Earth, avalik omand. Kirja font: Familjen Grotesk, SIL Open Font License 1.1.",
+    "en": "Digital terrain model 25 m, county boundaries and ETAK whole standing waters: Republic of Estonia Land and Spatial Development Board, extracted 21.11.2026, under its open data licence. The border on Peipsi and the neighbouring land: Natural Earth, public domain. The label's font: Familjen Grotesk, SIL Open Font License 1.1.",
     "links": [
       { "label": "Maa- ja Ruumiamet, open data licence", "url": "https://geoportaal.maaruum.ee/opendata-licence" },
-      { "label": "Natural Earth", "url": "https://www.naturalearthdata.com" }
+      { "label": "Natural Earth", "url": "https://www.naturalearthdata.com" },
+      { "label": "Familjen Grotesk", "url": "https://github.com/Familjen-Sthlm/Familjen-Grotesk" }
     ]
   },
   "source": "estonia-relief.scad",
@@ -36,12 +37,16 @@
     "value_heading": { "et": "Varu laua servani", "en": "Room to the bed's edge" },
     "each": { "et": "Kontrolliti:", "en": "Tested:" },
     "variants": [
-      { "id": "map", "label": { "et": "Eesti 1 : 800 000", "en": "Estonia 1 : 800,000" }, "defines": {} }
+      { "id": "map", "label": { "et": "Eesti 1 : 800 000", "en": "Estonia 1 : 800,000" }, "defines": {} },
+      { "id": "coast", "label": { "et": "Kiri ranniku ääres", "en": "Label along the coast" }, "defines": { "label": "EESTI", "label_style": "coast" } },
+      { "id": "place", "label": { "et": "Koht ja nimi", "en": "Place and name" }, "defines": { "label": "Paide", "label_style": "place" } }
     ],
     "checks": [
       { "id": "seams", "label": { "et": "Naabertahvlid on õmblusel sama kõrged, vahe alla 0,01 mm", "en": "Neighbouring tiles meet at one height, within 0.01 mm" }, "defines": { "mode": "seams" }, "expect": "clear" },
       { "id": "key-fit", "label": { "et": "Kiil mahub süvendisse", "en": "The key fits its recess" }, "defines": { "mode": "key_fit" }, "expect": "clear" },
       { "id": "key-snug", "label": { "et": "Kiilu ümber on vahet kuni 0,2 mm", "en": "The gap round the key is at most 0.2 mm" }, "defines": { "mode": "key_snug" }, "expect": "contact" },
+      { "id": "label-fits", "label": { "et": "Rannikukiri jääb merele ka 18 märgiga, koha nimi ja täpp maale, kumbki riputusaukudest eemale", "en": "A coast label stays on the sea at 18 characters too, a place name and its dot on land, both clear of the keyholes" }, "defines": { "mode": "label_fits" }, "expect": "clear" },
+      { "id": "label-long", "label": { "et": "18 märgi pikkuse kirja suurtähed väikesel kaardil, mm", "en": "Capitals of an 18-character label on the small map, mm" }, "defines": { "mode": "label_long" }, "expect": "value", "log_key": "label_long_cap", "min": 4.4 },
       { "id": "bed-margin", "label": { "et": "Iga tükk mahub koos ääre ja vahega lauale", "en": "Every piece fits the bed with its brim and gap" }, "defines": { "mode": "bed_margin" }, "expect": "value", "log_key": "bed_margin", "min": 0 }
     ]
   }

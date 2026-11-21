@@ -48,6 +48,9 @@ The scripts in `scripts/` use the Python standard library and OpenSCAD only; a p
   (ADR-003); downloads go to `build/`
 - `parts/<id>/published/` - generated, only for a published part
 - `scripts/` - the check and the builders; `workshop.py` holds what they share
+- `fonts/` - fonts a part loads by path (`use <...ttf>`), so every platform renders the same text:
+  Familjen Grotesk SemiBold under its `OFL.txt`, from
+  `github.com/Familjen-Sthlm/Familjen-Grotesk` at `de7dfe09`, SHA-256 `f24fba62882e8f0d19b53b5fd554ac1b01b14ede25a2a8a95de64fe56a156d8e`
 - `web/src/` - the room: plain ES modules and CSS, served as they are
 - `web/vendor/three/` - three.js as published on npm; only `OrbitControls.js` has its
   import path rewritten, because the page uses no import map
