@@ -60,6 +60,7 @@ X0, Y0, X1, Y1 = 355_000, 6_365_000, 755_000, 6_645_000  # grid bounds, wide eno
 BASE_MM = 5.0  # the sea floor of the print, all of it under the land too
 COAST_MM = 0.6  # the step from the sea to the lowest land
 EXAG_MM_PER_M = 11.0 / 318.0  # Suur Munamägi (318 m) about 11 mm above the land floor
+BROWN_M = 70  # the preview's brown above this; the print's change height is set from the histogram
 SMALL = {"factor": 2, "base_mm": 3.0}  # the one-print version: half size, same proportions apart from its base
 MIN_ISLAND_KM2 = 1.44  # an island under about 1.5 mm across is dropped
 MIN_LAKE_KM2 = 1.0
@@ -133,6 +134,8 @@ def build_vectors(paths: dict[str, Path]) -> dict:
     outline = unary_union([sea, land, lakes])
     outline = max(parts(outline), key=lambda p: p.area)
     outline = Polygon(outline.exterior).simplify(0.1 * mm)  # no holes: lakes print as water, not openings
+    if not outline.buffer(mm).contains(land):
+        raise SystemExit("some land lies outside the outline")
     return {"land": land, "outline": outline}
 
 
@@ -287,10 +290,11 @@ def png(path: Path, rgb: np.ndarray) -> None:
 
 
 def preview(path: Path, z: np.ndarray, inside: np.ndarray) -> None:
-    colours = np.array([[31, 47, 168], [63, 139, 60]], dtype=float)
+    colours = np.array([[31, 47, 168], [63, 139, 60], [123, 75, 44]], dtype=float)
     zz = z / 100.0
     band = np.zeros(zz.shape, dtype=int)
     band[zz > BASE_MM + 0.01] = 1
+    band[zz >= BASE_MM + COAST_MM + BROWN_M * EXAG_MM_PER_M] = 2
     gy, gx = np.gradient(zz, CELL_MM)
     shade = np.clip(0.75 + 0.6 * (-gx + gy) / np.sqrt(1 + gx ** 2 + gy ** 2), 0.4, 1.2)
     rgb = colours[band] * shade[..., None]

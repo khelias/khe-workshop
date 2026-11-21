@@ -11,8 +11,8 @@
   },
   "licence": "CC-BY-4.0",
   "credit": {
-    "et": "Kõrgused, maakonnad ja järved: Maa- ja Ruumiamet, andmed võetud 21.11.2026, avaandmete litsentsiga. Riigipiir Peipsil ja naabermaad: Natural Earth, avalik omand.",
-    "en": "Elevation, counties and lakes: Republic of Estonia Land and Spatial Development Board, data extracted 21.11.2026, under its open data licence. The border on Peipsi and the neighbouring land: Natural Earth, public domain.",
+    "et": "Digitaalne maapinnamudel 25 m, maakondade piirid ja ETAK-i tervikseisuveed: Maa- ja Ruumiamet, väljavõte 21.11.2026, avaandmete litsentsiga. Riigipiir Peipsil ja naabermaad: Natural Earth, avalik omand.",
+    "en": "Digital terrain model 25 m, county boundaries and ETAK whole standing waters: Republic of Estonia Land and Spatial Development Board, extracted 21.11.2026, under its open data licence. The border on Peipsi and the neighbouring land: Natural Earth, public domain.",
     "links": [
       { "label": "Maa- ja Ruumiamet, open data licence", "url": "https://geoportaal.maaruum.ee/opendata-licence" },
       { "label": "Natural Earth", "url": "https://www.naturalearthdata.com" }
