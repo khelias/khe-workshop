@@ -176,5 +176,9 @@ tbody th { color: var(--ink); font-weight: 500; }
   .row__link { gap: 16px; align-items: flex-start; }
   .row__outline { width: 72px; height: 72px; }
   .row__title { font-size: 22px; }
-  .stage__view { height: 54vh; }
+}
+
+/* The stage takes every touch, so on a touch screen it leaves room around it to scroll the page. */
+@media (max-width: 520px), (any-pointer: coarse) {
+  .stage__view { height: 54vh; min-height: 220px; }
 }
