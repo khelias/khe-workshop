@@ -1,0 +1,48 @@
+{
+  "id": "estonia-relief",
+  "title": { "et": "Eesti reljeefkaart", "en": "Estonia relief map" },
+  "summary": {
+    "et": "Eesti maapind seinale, saared ja meri ühes tükis.",
+    "en": "Estonia's land for the wall, with the islands and the sea in one piece."
+  },
+  "story": {
+    "et": "Maapind on Maa- ja Ruumiameti kõrgusmudelist mõõtkavas 1 : 800 000 ja kõrgused on umbes 28 korda võimendatud, muidu oleks Suur Munamägi vaid kaks prindikihti. Meri seob saared mandriga, Peipsi on sinine riigipiirini ja Ruhnu jäi välja, sest see oleks olnud eraldi tükk. Värv vahetub kihtide kaupa: meri on sinine, maa roheline ja üle 70 meetri pruun. Suur kaart koosneb neljast tahvlist, mis liimitakse tagant liblikakiiludega kokku, väike on üks print poole suurusega.",
+    "en": "The land comes from the Estonian Land Board's elevation model at 1 : 800,000, with heights raised about 28 times, or Suur Munamägi would be two print layers. The sea joins the islands to the mainland, Peipsi is blue up to the state border, and Ruhnu is left out, since it would have been a piece of its own. The colour changes by layer: the sea is blue, the land green and brown above 70 metres. The large map is four tiles glued together behind with butterfly keys; the small one is a single print at half the size."
+  },
+  "licence": "CC-BY-4.0",
+  "credit": {
+    "et": "Kõrgused, maakonnad ja järved: Maa- ja Ruumiamet, andmed võetud 21.11.2026, avaandmete litsentsiga. Riigipiir Peipsil ja naabermaad: Natural Earth, avalik omand.",
+    "en": "Elevation, counties and lakes: Republic of Estonia Land and Spatial Development Board, data extracted 21.11.2026, under its open data licence. The border on Peipsi and the neighbouring land: Natural Earth, public domain.",
+    "links": [
+      { "label": "Maa- ja Ruumiamet, open data licence", "url": "https://geoportaal.maaruum.ee/opendata-licence" },
+      { "label": "Natural Earth", "url": "https://www.naturalearthdata.com" }
+    ]
+  },
+  "source": "estonia-relief.scad",
+  "published": false,
+  "exports": [
+    { "id": "tile-0", "file": "estonia-relief-tile-0.stl", "defines": { "mode": "tile", "tile": 0 }, "title": { "et": "Loodetahvel", "en": "North-west tile" } },
+    { "id": "tile-1", "file": "estonia-relief-tile-1.stl", "defines": { "mode": "tile", "tile": 1 }, "title": { "et": "Kirdetahvel", "en": "North-east tile" } },
+    { "id": "tile-2", "file": "estonia-relief-tile-2.stl", "defines": { "mode": "tile", "tile": 2 }, "title": { "et": "Edelatahvel", "en": "South-west tile" } },
+    { "id": "tile-3", "file": "estonia-relief-tile-3.stl", "defines": { "mode": "tile", "tile": 3 }, "title": { "et": "Kagutahvel", "en": "South-east tile" } },
+    { "id": "small", "file": "estonia-relief-small.stl", "defines": { "mode": "small" }, "title": { "et": "Väike kaart", "en": "Small map" } },
+    { "id": "key", "file": "estonia-relief-key.stl", "defines": { "mode": "key" }, "title": { "et": "Liblikakiil", "en": "Butterfly key" } },
+    { "id": "coupon", "file": "estonia-relief-coupon.stl", "defines": { "mode": "coupon" }, "title": { "et": "Liitekatse", "en": "Joint coupon" } }
+  ],
+  "stage_export": "small",
+  "allowed_nonmanifold_edges": 0,
+  "probes": {
+    "variant_heading": { "et": "Kaart", "en": "Map" },
+    "value_heading": { "et": "Varu laua servani", "en": "Room to the bed's edge" },
+    "each": { "et": "Kontrolliti:", "en": "Tested:" },
+    "variants": [
+      { "id": "map", "label": { "et": "Eesti 1 : 800 000", "en": "Estonia 1 : 800,000" }, "defines": {} }
+    ],
+    "checks": [
+      { "id": "seams", "label": { "et": "Naabertahvlid on õmblusel sama kõrged, vahe alla 0,01 mm", "en": "Neighbouring tiles meet at one height, within 0.01 mm" }, "defines": { "mode": "seams" }, "expect": "clear" },
+      { "id": "key-fit", "label": { "et": "Kiil mahub süvendisse", "en": "The key fits its recess" }, "defines": { "mode": "key_fit" }, "expect": "clear" },
+      { "id": "key-snug", "label": { "et": "Kiilu ümber on vahet kuni 0,2 mm", "en": "The gap round the key is at most 0.2 mm" }, "defines": { "mode": "key_snug" }, "expect": "contact" },
+      { "id": "bed-margin", "label": { "et": "Iga tükk mahub koos ääre ja vahega lauale", "en": "Every piece fits the bed with its brim and gap" }, "defines": { "mode": "bed_margin" }, "expect": "value", "log_key": "bed_margin", "min": 0 }
+    ]
+  }
+}

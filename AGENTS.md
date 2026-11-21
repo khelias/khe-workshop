@@ -33,13 +33,19 @@ This repo's own decisions: [docs/adr/](docs/adr/).
 - `node --test web/test/*.test.mjs` - the decoder, the slider and the loaders, and a
   `--base` build of the published parts.
 - `npm run -s lint` - the family design check, against an empty baseline.
+- `parts/<id>/data/prep.py` - prepares a part's data from open sources, by hand, with
+  the pinned `uv run` command in its docstring; never part of the check or CI
+  ([ADR-003](docs/adr/003-parts-may-carry-data-prepared-from-open-sources.md)).
 
-The scripts use the Python standard library and OpenSCAD only.
+The scripts in `scripts/` use the Python standard library and OpenSCAD only; a part's
+`data/prep.py` may use pinned third-party packages (ADR-003).
 
 ## Layout
 
 - `parts/<id>/part.json` - titles, story, licence, credit, exports, probes, proof
 - `parts/<id>/<id>.scad` - the public source
+- `parts/<id>/data/` - a part's prepared data and the script that makes it, committed
+  (ADR-003); downloads go to `build/`
 - `parts/<id>/published/` - generated, only for a published part
 - `scripts/` - the check and the builders; `workshop.py` holds what they share
 - `web/src/` - the room: plain ES modules and CSS, served as they are

@@ -1,0 +1,231 @@
+{
+ "scale": "1:800000",
+ "crs": "EPSG:3301",
+ "cell_mm": 0.5,
+ "cell_m": 400.0,
+ "grid_bounds_m": [
+  355000,
+  6365000,
+  755000,
+  6645000
+ ],
+ "grid_cells": [
+  1000,
+  700
+ ],
+ "base_mm": 5.0,
+ "coast_mm": 0.6,
+ "exag_mm_per_m": 0.034591,
+ "small": {
+  "factor": 2,
+  "base_mm": 3.0,
+  "cells": [
+   500,
+   350
+  ],
+  "size_mm": [
+   249.5,
+   174.5
+  ]
+ },
+ "z_unit_mm": 0.01,
+ "z_max_mm": 15.52,
+ "land_height_m": {
+  "p25": 26.6,
+  "p50": 49.3,
+  "p75": 72.2,
+  "p90": 94.7,
+  "p95": 115.2,
+  "p99": 179.6,
+  "p100": 286.7
+ },
+ "land_share_at_or_above_m": {
+  "30": 0.7253,
+  "40": 0.6095,
+  "50": 0.4918,
+  "60": 0.3843,
+  "70": 0.2738,
+  "80": 0.1755,
+  "90": 0.1194,
+  "100": 0.082,
+  "110": 0.0588,
+  "120": 0.0428,
+  "130": 0.0314,
+  "140": 0.0246,
+  "150": 0.0194,
+  "160": 0.0158
+ },
+ "outline": {
+  "points": 1126,
+  "area_cm2": 884.1,
+  "size_mm": [
+   467.1,
+   306.6
+  ]
+ },
+ "tiles": [
+  {
+   "index": 0,
+   "cols": [
+    25,
+    492
+   ],
+   "rows_from_south": [
+    336,
+    644
+   ],
+   "x0_mm": 12.5,
+   "x1_mm": 246.0,
+   "y0_mm": 168.0,
+   "y1_mm": 322.0
+  },
+  {
+   "index": 1,
+   "cols": [
+    492,
+    960
+   ],
+   "rows_from_south": [
+    336,
+    644
+   ],
+   "x0_mm": 246.0,
+   "x1_mm": 480.0,
+   "y0_mm": 168.0,
+   "y1_mm": 322.0
+  },
+  {
+   "index": 2,
+   "cols": [
+    25,
+    492
+   ],
+   "rows_from_south": [
+    29,
+    336
+   ],
+   "x0_mm": 12.5,
+   "x1_mm": 246.0,
+   "y0_mm": 14.5,
+   "y1_mm": 168.0
+  },
+  {
+   "index": 3,
+   "cols": [
+    492,
+    960
+   ],
+   "rows_from_south": [
+    29,
+    336
+   ],
+   "x0_mm": 246.0,
+   "x1_mm": 480.0,
+   "y0_mm": 14.5,
+   "y1_mm": 168.0
+  }
+ ],
+ "keys": [
+  [
+   246.0,
+   195.0,
+   0
+  ],
+  [
+   246.0,
+   245.0,
+   0
+  ],
+  [
+   246.0,
+   295.0,
+   0
+  ],
+  [
+   246.0,
+   122.0,
+   0
+  ],
+  [
+   64.5,
+   168.0,
+   90
+  ],
+  [
+   114.5,
+   168.0,
+   90
+  ],
+  [
+   164.5,
+   168.0,
+   90
+  ],
+  [
+   214.5,
+   168.0,
+   90
+  ],
+  [
+   295.0,
+   168.0,
+   90
+  ],
+  [
+   345.0,
+   168.0,
+   90
+  ],
+  [
+   395.0,
+   168.0,
+   90
+  ]
+ ],
+ "keyholes": [
+  [
+   175.301,
+   218.114
+  ],
+  [
+   386.402,
+   218.114
+  ]
+ ],
+ "small_keyholes": [
+  [
+   107.776,
+   104.682
+  ],
+  [
+   185.576,
+   104.682
+  ]
+ ],
+ "sources": {
+  "dtm": {
+   "file": "DTM_25m_eesti.tif",
+   "url": "https://geoportaal.maaamet.ee/index.php?lang_id=1&plugin_act=otsing&andmetyyp=mp_korgusmudelid&dl=1&f=DTM_25m_eesti.tif&page_id=614",
+   "bytes": 359569515,
+   "sha256": "4ddaf173cf4bdd7b48474f27adc71bf7edb36c4e33f25976f03edf8f5f6b1ef8"
+  },
+  "counties": {
+   "file": "maakond_shp.zip",
+   "url": "https://geoportaal.maaamet.ee/docs/haldus_asustus/maakond_shp.zip",
+   "bytes": 7125372,
+   "sha256": "9f853f12c2594ead4aba8a5b6cf418561e5fcc459332de1cbf88cd9d4e202dae"
+  },
+  "lakes": {
+   "file": "tuletiskihid-eelis_tervikseisuveed_shp.zip",
+   "url": "https://geoportaal.maaamet.ee/index.php?lang_id=1&plugin_act=otsing&andmetyyp=ETAK&dl=1&f=tuletiskihid-eelis_tervikseisuveed_shp.zip&page_id=609",
+   "bytes": 8871599,
+   "sha256": "16fe3a24c71d8c08923588d6125df6a0b3ad51e6e61876e7473fbbda7d8e33f3"
+  },
+  "countries": {
+   "file": "ne_10m_admin_0_countries.zip",
+   "url": "https://naciscdn.org/naturalearth/10m/cultural/ne_10m_admin_0_countries.zip",
+   "bytes": 4930492,
+   "sha256": "ce1ac7036499a0edd641fbc093cd209a98f96a49d2eca8480aaacad35138a7f6"
+  }
+ }
+}
