@@ -178,6 +178,10 @@ class Stage {
     this.controls.minDistance = this.radius * 1.3;
     this.controls.maxDistance = this.radius * 6;
     this.controls.maxPolarAngle = Math.PI * 0.52;
+    // A plain wheel scrolls the page past the stage; Ctrl or Cmd with the wheel zooms, as does a trackpad pinch, which Chrome and Firefox send with Ctrl.
+    this.canvas.parentElement.addEventListener('wheel', (event) => {
+      if (!event.ctrlKey && !event.metaKey) event.stopPropagation();
+    }, { capture: true, passive: true });
     this.controls.addEventListener('change', () => this.invalidate());
     this.aim(0.62, 0.32);
   }
