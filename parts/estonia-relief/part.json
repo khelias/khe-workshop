@@ -21,11 +21,11 @@
   "source": "estonia-relief.scad",
   "published": false,
   "exports": [
-    { "id": "tile-0", "file": "estonia-relief-tile-0.stl", "defines": { "mode": "tile", "tile": 0 }, "title": { "et": "Loodetahvel", "en": "North-west tile" } },
-    { "id": "tile-1", "file": "estonia-relief-tile-1.stl", "defines": { "mode": "tile", "tile": 1 }, "title": { "et": "Kirdetahvel", "en": "North-east tile" } },
-    { "id": "tile-2", "file": "estonia-relief-tile-2.stl", "defines": { "mode": "tile", "tile": 2 }, "title": { "et": "Edelatahvel", "en": "South-west tile" } },
-    { "id": "tile-3", "file": "estonia-relief-tile-3.stl", "defines": { "mode": "tile", "tile": 3 }, "title": { "et": "Kagutahvel", "en": "South-east tile" } },
-    { "id": "small", "file": "estonia-relief-small.stl", "defines": { "mode": "small" }, "title": { "et": "Väike kaart", "en": "Small map" } },
+    { "id": "tile-0", "file": "estonia-relief-tile-0.stl", "defines": { "mode": "tile", "tile": 0, "grid": 1 }, "title": { "et": "Loodetahvel", "en": "North-west tile" } },
+    { "id": "tile-1", "file": "estonia-relief-tile-1.stl", "defines": { "mode": "tile", "tile": 1, "grid": 1 }, "title": { "et": "Kirdetahvel", "en": "North-east tile" } },
+    { "id": "tile-2", "file": "estonia-relief-tile-2.stl", "defines": { "mode": "tile", "tile": 2, "grid": 1 }, "title": { "et": "Edelatahvel", "en": "South-west tile" } },
+    { "id": "tile-3", "file": "estonia-relief-tile-3.stl", "defines": { "mode": "tile", "tile": 3, "grid": 1 }, "title": { "et": "Kagutahvel", "en": "South-east tile" } },
+    { "id": "small", "file": "estonia-relief-small.stl", "defines": { "mode": "small", "grid": 1 }, "title": { "et": "Väike kaart", "en": "Small map" } },
     { "id": "key", "file": "estonia-relief-key.stl", "defines": { "mode": "key" }, "title": { "et": "Liblikakiil", "en": "Butterfly key" } },
     { "id": "coupon", "file": "estonia-relief-coupon.stl", "defines": { "mode": "coupon" }, "title": { "et": "Liitekatse", "en": "Joint coupon" } }
   ],

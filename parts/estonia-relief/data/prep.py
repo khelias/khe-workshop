@@ -67,6 +67,7 @@ MIN_LAKE_KM2 = 1.0
 RUHNU = (23.25, 57.81)
 CLOSE_MM, GROW_MM = 30.0, 8.0  # the sea outline: gaps up to 30 mm closed, then 8 mm around everything
 MAX_TILE_MM = 245.0
+COARSE = 2  # the exports' grid is every second cell, so a published part stays within its budget (ADR-001)
 KEY_BOX_MM = (34.0, 18.0)  # room a butterfly key's recess needs, across and along its seam
 KEY_SPACING_MM = 50.0
 KEYHOLE_BOX_MM = (16.0, 28.0)  # room a keyhole slot needs under land, with its head at the bottom
@@ -255,6 +256,7 @@ def write_outline(path: Path, outline_points: list, tiles: list[dict], keys, key
         f"cell_mm = {CELL_MM};\n"
         f"base_mm = {BASE_MM};\n"
         f"small_factor = {SMALL['factor']};\n"
+        f"coarse = {COARSE};\n"
         f"tiles = {scad_list([[t['x0_mm'], t['y0_mm'], t['x1_mm'], t['y1_mm']] for t in tiles])};\n"
         f"keys = {scad_list(keys)};\n"
         f"keyholes = {scad_list(keyholes)};\n"
@@ -263,12 +265,15 @@ def write_outline(path: Path, outline_points: list, tiles: list[dict], keys, key
 
 
 def split_tiles(outline_mm: list[tuple]) -> list[dict]:
-    """2 x 2 tiles over the outline's box, on cell lines, sharing their seam row and column."""
+    """2 x 2 tiles over the outline's box, on every COARSE-th cell line, so the coarse grids share
+    their seam row and column too."""
     xs = [p[0] for p in outline_mm]
     ys = [p[1] for p in outline_mm]
-    c0, c1 = int(np.floor(min(xs) / CELL_MM)), int(np.ceil(max(xs) / CELL_MM))
-    r0, r1 = int(np.floor(min(ys) / CELL_MM)), int(np.ceil(max(ys) / CELL_MM))
-    cm, rm = (c0 + c1) // 2, (r0 + r1) // 2
+    def line(v, rounding):
+        return int(rounding(v / CELL_MM / COARSE)) * COARSE
+    c0, c1 = line(min(xs), np.floor), line(max(xs), np.ceil)
+    r0, r1 = line(min(ys), np.floor), line(max(ys), np.ceil)
+    cm, rm = (c0 + c1) // (2 * COARSE) * COARSE, (r0 + r1) // (2 * COARSE) * COARSE
     tiles = []
     for index, ((ya, yb), (xa, xb)) in enumerate(
             [((rm, r1), (c0, cm)), ((rm, r1), (cm, c1)), ((r0, rm), (c0, cm)), ((r0, rm), (cm, c1))]):
@@ -322,12 +327,14 @@ def main() -> int:
         # rows from the south: row index in the grid is ny - 1 - r
         block = z[ny - 1 - yb: ny - ya, xa: xb + 1]
         write_dat(HERE / f"tile-{tile['index']}.dat", block)
+        write_dat(HERE / f"tile-{tile['index']}-coarse.dat", block[::-1][::COARSE, ::COARSE][::-1])
 
     small_cell = CELL_M * SMALL["factor"]
     hs = heights(paths["dtm"], small_cell)
     ls = land_mask(vectors["land"], small_cell, hs.shape)
     zs = z_grid(hs, ls, SMALL["base_mm"], EXAG_MM_PER_M / SMALL["factor"])
     write_dat(HERE / "small.dat", zs)
+    write_dat(HERE / "small-coarse.dat", zs[::-1][::COARSE, ::COARSE][::-1])
     small_mm = ((zs.shape[1] - 1) * CELL_MM, (zs.shape[0] - 1) * CELL_MM)
 
     outline_g, land_g = in_mm(vectors["outline"], CELL_M), in_mm(vectors["land"], CELL_M)

@@ -7,6 +7,8 @@ include <data/outline.scad>
 
 mode = "tile";  // tile | small | key | coupon | seams | key_fit | key_snug | bed_margin
 tile = 0;       // 0 north-west, 1 north-east, 2 south-west, 3 south-east
+grid = cell_mm; // the print's grid; the exports take cell_mm * coarse, every second cell, for their budget
+assert(grid == cell_mm || grid == cell_mm * coarse, "grid is cell_mm or cell_mm * coarse");
 
 key_long = 30;       // across the seam
 key_wide = 14;       // at its ends
@@ -25,7 +27,9 @@ bed_edge = 5.1;      // brim and its gap round every piece
 
 $fn = 48;
 
-module relief(file) scale([cell_mm, cell_mm, 0.01]) surface(file = file, convexity = 5);
+// a height grid by its name in data/, at the chosen grid
+module relief(name) scale([grid, grid, 0.01])
+    surface(file = str("data/", name, grid == cell_mm ? "" : "-coarse", ".dat"), convexity = 5);
 
 module bowtie() polygon([[-key_long / 2, -key_wide / 2], [-key_long / 2, key_wide / 2], [0, key_waist / 2],
                          [key_long / 2, key_wide / 2], [key_long / 2, -key_wide / 2], [0, -key_waist / 2]]);
@@ -55,7 +59,7 @@ module outline_prism(h = 60) linear_extrude(h) polygon(outline);
 
 // tile i in the map's frame
 module tile_body(i) intersection() {
-    translate([tiles[i][0], tiles[i][1], 0]) relief(str("data/tile-", i, ".dat"));
+    translate([tiles[i][0], tiles[i][1], 0]) relief(str("tile-", i));
     outline_prism();
 }
 module tile_piece(i) difference() { tile_body(i); back_cuts(); }
@@ -63,7 +67,7 @@ module tile_piece(i) difference() { tile_body(i); back_cuts(); }
 // the small map in its own frame: half the large map's cell centres, less a quarter cell
 module small_piece() difference() {
     intersection() {
-        relief("data/small.dat");
+        relief("small");
         linear_extrude(60) scale(1 / small_factor) translate([-cell_mm / 2, -cell_mm / 2]) polygon(outline);
     }
     keyholes(small_keyholes, 2.4, 1.2);  // a lighter piece on a thinner base
