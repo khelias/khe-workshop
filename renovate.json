@@ -46,6 +46,19 @@
       "automerge": true
     },
     {
+      "description": "Actions releases wait three days. Pins have no release date and are left out.",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchUpdateTypes": [
+        "major",
+        "minor",
+        "patch",
+        "digest"
+      ],
+      "minimumReleaseAge": "3 days"
+    },
+    {
       "description": "@khelias/ui is never automerged: each release is reviewed and merged here (estate ADR-014).",
       "matchPackageNames": [
         "@khelias/ui"

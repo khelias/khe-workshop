@@ -98,7 +98,7 @@ in the same commit as a rebuilt `published/`, since the check requires the versi
 
 Renovate ([estate
 ADR-007](https://github.com/khelias/khe-architecture/blob/main/decisions/007-automated-writers.md))
-automerges GitHub Actions minor and patch updates, digests and pins (`renovate.json`),
-never `@khelias/ui`. The way back is to revert its commit on `main` and push.
+automerges GitHub Actions minor and patch updates, digests and pins
+(`renovate.json`) once a release is three days old, never `@khelias/ui`. The way back is to revert its commit on `main` and push.
 
 This repo never starts a print and sends the printer nothing but read requests.
