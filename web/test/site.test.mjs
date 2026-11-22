@@ -87,3 +87,11 @@ test('a replay from above layer 1 says so, and its inlay sits in the stage mesh'
   assert.ok(Math.abs(low[2]) < 0.001 && Math.abs(high[2] - 0.68) < 0.001, 'the stamp fills the bottom 0.68 mm');
   assert.equal(stageConfig(join('capsule-tower', 'index.html')).first, 1);
 });
+
+test('index layer counts use Estonian partitive singular kihti and English layers', () => {
+  const etIndex = readFileSync(join(out, 'index.html'), 'utf8');
+  const enIndex = readFileSync(join(out, 'en', 'index.html'), 'utf8');
+  assert.match(etIndex, /\b\d+ kihti,/);
+  assert.doesNotMatch(etIndex, /\b\d+ kihte\b/);
+  assert.match(enIndex, /\b\d+ layers,/);
+});

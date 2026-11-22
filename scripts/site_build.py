@@ -36,12 +36,12 @@ LICENCES = {
 TEXT = {
     "et": {
         "room": "Töökoda",
-        "lead": "Detailid, mille oleme oma kodu jaoks ise kavandanud ja printinud. Igaüht saab keerata, lõigata ja vaadata, kuidas ta kiht kihi haaval valmis sai.",
+        "lead": "Detailid, mille oleme oma kodu jaoks ise kavandanud ja printinud. Igaüht saab keerata, lõigata ja vaadata, kuidas see kiht kihi haaval valmis sai.",
         "other": "English", "back": "Kõik detailid", "views": "Vaade",
         "model": "Mudel", "cut": "Lõige", "print": "Printimine",
         "why": "Miks see olemas on", "proof": "Mida kontroll tõestas", "facts": "Prinditöö",
         "files": "Failid", "licence": "Litsents", "source": "Lähtekood (OpenSCAD)",
-        "size": "Mõõdud", "layers": "Kihte", "time": "Printimise aeg", "filament": "Filamenti",
+        "size": "Mõõdud", "layers": "Kihte", "layers_one": "kiht", "layers_many": "kihti", "time": "Printimise aeg", "filament": "Filamenti",
         "material": "Materjal", "layer_height": "Kihi kõrgus", "infill": "Täidis", "walls": "Seinu", "supports": "Tugi",
         "yes": "On", "no": "Pole",
         "result": "Tulemus",
@@ -65,7 +65,7 @@ TEXT = {
         "model": "Model", "cut": "Cut", "print": "Print",
         "why": "Why it exists", "proof": "What the check proved", "facts": "The print",
         "files": "Files", "licence": "Licence", "source": "Source (OpenSCAD)",
-        "size": "Size", "layers": "Layers", "time": "Print time", "filament": "Filament",
+        "size": "Size", "layers": "Layers", "layers_one": "layer", "layers_many": "layers", "time": "Print time", "filament": "Filament",
         "material": "Material", "layer_height": "Layer height", "infill": "Infill", "walls": "Walls", "supports": "Supports",
         "yes": "Yes", "no": "No",
         "result": "Result",
@@ -249,7 +249,8 @@ class Site:
         for part in self.parts:
             meta = replay_meta(self.replay_file(part))
             href = self.link(depth, f"{prefix}{part['id']}/")
-            facts = f"{meta['total_layers']} {t['layers'].lower()}, {duration(meta['print_seconds'])}"
+            layer_unit = t["layers_one"] if meta["total_layers"] == 1 else t["layers_many"]
+            facts = f"{meta['total_layers']} {layer_unit}, {duration(meta['print_seconds'])}"
             rows.append(f"""<li class="row">
 <a class="row__link" href="{href}">
 {outline(self.replay_file(part))}
