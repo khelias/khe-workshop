@@ -5,10 +5,10 @@ part is a parametric OpenSCAD file with a check that proves it: the mesh is
 closed, it fits the printer, and where a part has to fit something else, the fit
 is tested in the model.
 
-Töökoda, the room on [khe.ee](https://khe.ee) that will show these parts, lets a
-visitor turn a part, cut it open and scrub through its real print layer by layer.
-It is not live yet: a part is published only once it has been printed and used,
-with its real print recorded.
+Töökoda, the room at [khe.ee/workshop](https://khe.ee/workshop/), lets a visitor
+turn each published part, cut it open and scrub through its real print layer by
+layer. A part is published once it has been printed and used, with its real print
+recorded.
 
 ## Run it
 
