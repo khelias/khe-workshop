@@ -96,12 +96,16 @@ test('index layer counts use Estonian partitive singular kihti and English layer
   assert.match(enIndex, /\b\d+ layers,/);
 });
 
-test('a part without an assembly has the three views, model, cut and print', () => {
+test('a part has the model, cut and print views, and parts only with an assembly', () => {
   for (const name of files.filter((file) => /^(?:en\/)?[\w-]+\/index\.html$/.test(file))) {
     const page = readFileSync(join(out, name), 'utf8');
-    assert.deepEqual([...page.matchAll(/data-view="(\w+)"/g)].map((match) => match[1]), ['model', 'cut', 'print'], name);
-    assert.equal(stageConfig(name).assembly, undefined, name);
+    const views = [...page.matchAll(/data-view="(\w+)"/g)].map((match) => match[1]);
+    const { assembly } = stageConfig(name);
+    assert.deepEqual(views, assembly ? ['model', 'cut', 'print', 'parts'] : ['model', 'cut', 'print'], name);
+    for (const item of assembly?.items ?? []) assert.ok(resolves(item.stl), `${name} links ${item.stl}, which the build did not write`);
   }
+  assert.ok(stageConfig(join('soma-egg', 'index.html')).assembly, 'the Soma egg has its parts view');
+  assert.equal(stageConfig(join('yarn-bowl', 'index.html')).assembly, undefined);
 });
 
 test('the index shows one part on its stage, starting in print replay', () => {

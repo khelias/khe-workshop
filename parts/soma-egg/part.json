@@ -12,7 +12,14 @@
   "licence": "CC-BY-4.0",
   "credit": null,
   "source": "soma-egg.scad",
-  "published": false,
+  "published": true,
+  "proof": {
+    "printed": "2026-11-24",
+    "use": {
+      "et": "Mõistatus lastele ja külalistele: kes kuubiku kokku saab, keerab muna kinni.",
+      "en": "A puzzle for the children and for guests: whoever packs the cube closes the egg."
+    }
+  },
   "exports": [
     { "id": "egg", "file": "soma-egg.stl", "defines": { "mode": "egg", "steps": 32, "rib_slices": 24 }, "title": { "et": "Muna koos korgiga", "en": "Egg with its cap" } },
     { "id": "base", "file": "soma-egg-base.stl", "defines": { "mode": "base", "steps": 32, "rib_slices": 24 }, "title": { "et": "Alus", "en": "Base" } },

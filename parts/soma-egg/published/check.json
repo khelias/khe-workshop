@@ -1,0 +1,241 @@
+{
+ "id": "soma-egg",
+ "openscad": "2026.10.11",
+ "exports": [
+  {
+   "id": "egg",
+   "file": "soma-egg.stl",
+   "triangles": 41676,
+   "size_mm": [
+    59.157,
+    59.157,
+    72.85
+   ],
+   "volume_cm3": 105.3,
+   "nonmanifold_edges": 0,
+   "sha256": "fa611041bea8d9b4c8a4bb592720786bae9d85cd2d3ef024d121898fc117f9c9"
+  },
+  {
+   "id": "base",
+   "file": "soma-egg-base.stl",
+   "triangles": 22732,
+   "size_mm": [
+    59.157,
+    59.157,
+    45.6
+   ],
+   "volume_cm3": 66.3,
+   "nonmanifold_edges": 0,
+   "sha256": "92dd984fb0df5f382079ce60dccf65c970953c51d4dd7c33cb79846b94f8bbb7"
+  },
+  {
+   "id": "cap",
+   "file": "soma-egg-cap.stl",
+   "triangles": 27868,
+   "size_mm": [
+    57.003,
+    57.003,
+    35.25
+   ],
+   "volume_cm3": 37.9,
+   "nonmanifold_edges": 0,
+   "sha256": "a706ec9816d25894996deec859cf8e0dbf0860fb5aef86c0d1be66075fae5cdf"
+  },
+  {
+   "id": "pieces",
+   "file": "soma-egg-pieces.stl",
+   "triangles": 352,
+   "size_mm": [
+    149.8,
+    54.8,
+    19.8
+   ],
+   "volume_cm3": 25.8,
+   "nonmanifold_edges": 0,
+   "sha256": "8bd5de9751b9db853c3926534760e53e1b69fb719794a25e2ed7da239d402643"
+  },
+  {
+   "id": "test-base",
+   "file": "soma-egg-test-base.stl",
+   "triangles": 4718,
+   "size_mm": [
+    54.534,
+    54.534,
+    10.0
+   ],
+   "volume_cm3": 9.5,
+   "nonmanifold_edges": 0,
+   "sha256": "75cfebe1aabfb689a39a4cfc0ad390e45f46453af7c4ff42c696722cb5bc51ac"
+  },
+  {
+   "id": "test-cap",
+   "file": "soma-egg-test-cap.stl",
+   "triangles": 17278,
+   "size_mm": [
+    54.534,
+    54.534,
+    10.4
+   ],
+   "volume_cm3": 7.4,
+   "nonmanifold_edges": 0,
+   "sha256": "0e1bf855a822398bf3b1e3e65ce986daf64e43b3f78ccc7661b3f88daa926643"
+  },
+  {
+   "id": "test-piece",
+   "file": "soma-egg-test-piece.stl",
+   "triangles": 46,
+   "size_mm": [
+    29.8,
+    19.8,
+    9.8
+   ],
+   "volume_cm3": 3.8,
+   "nonmanifold_edges": 0,
+   "sha256": "063650fb9ed96224246e715836d24e768ada15b603573f57dce9064aa58c8821"
+  }
+ ],
+ "probes": [
+  {
+   "id": "cube-10",
+   "label": {
+    "et": "Kuubiku serv 10 mm",
+    "en": "10 mm cubes"
+   },
+   "checks": [
+    {
+     "id": "closed",
+     "label": {
+      "et": "Kokkupandud kuubik mahub munasse ja kork läheb peale",
+      "en": "The packed cube fits and the cap goes on"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "raised",
+     "label": {
+      "et": "1,5 mm kõrgemale jäänud tükk ei lase korki peale",
+      "en": "A piece standing 1.5 mm high stops the cap"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "thread",
+     "label": {
+      "et": "Keermel on vahet, kork ei hõõrdu alusesse",
+      "en": "The thread has play, the cap does not rub the base"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "side-gap",
+     "label": {
+      "et": "Kuubiku ja süvendi seina vahel on vähemalt 0,3 mm",
+      "en": "At least 0.3 mm between the cube and the pocket wall"
+     },
+     "passed": true,
+     "value": 0.35
+    },
+    {
+     "id": "corner-wall",
+     "label": {
+      "et": "Süvendi nurga ja keerme vahel on vähemalt 1,5 mm seina",
+      "en": "At least 1.5 mm of wall between the pocket corner and the thread"
+     },
+     "passed": true,
+     "value": 1.6
+    },
+    {
+     "id": "bore-wall",
+     "label": {
+      "et": "Korgi sein on keerme kohal vähemalt 1,5 mm paks",
+      "en": "The cap wall over the thread is at least 1.5 mm thick"
+     },
+     "passed": true,
+     "value": 1.59879
+    }
+   ]
+  }
+ ],
+ "assembly": [
+  {
+   "id": "piece-v",
+   "file": "assembly-piece-v.stl",
+   "triangles": 46,
+   "size_mm": [
+    19.8,
+    19.8,
+    9.8
+   ],
+   "sha256": "13eb79a9139bed606827ef8adeee88b4d327d09c44d1226e31bb68b4d612283c"
+  },
+  {
+   "id": "piece-l",
+   "file": "assembly-piece-l.stl",
+   "triangles": 54,
+   "size_mm": [
+    9.8,
+    19.8,
+    29.8
+   ],
+   "sha256": "6e07875f8c39ed136babb5431edc9db62d287eed9925efe9395772f3fa7ffda4"
+  },
+  {
+   "id": "piece-t",
+   "file": "assembly-piece-t.stl",
+   "triangles": 52,
+   "size_mm": [
+    19.8,
+    9.8,
+    29.8
+   ],
+   "sha256": "0ed2c84cb474433abcc0aa58ac87c6518a18e77e83753576756678711b9638db"
+  },
+  {
+   "id": "piece-z",
+   "file": "assembly-piece-z.stl",
+   "triangles": 58,
+   "size_mm": [
+    29.8,
+    19.8,
+    9.8
+   ],
+   "sha256": "260b7ff3c47ee2a85ff9637a93195a84115684266a1acfd2cb5408f78b88dc63"
+  },
+  {
+   "id": "piece-a",
+   "file": "assembly-piece-a.stl",
+   "triangles": 64,
+   "size_mm": [
+    19.8,
+    19.8,
+    19.8
+   ],
+   "sha256": "5218340baf9e35871fc6a985eceb77b468cd4a367d36671e74657abe320a7caf"
+  },
+  {
+   "id": "piece-b",
+   "file": "assembly-piece-b.stl",
+   "triangles": 60,
+   "size_mm": [
+    19.8,
+    19.8,
+    19.8
+   ],
+   "sha256": "6dfbd3b0edac430b2796a4828a88bbbe4360e0065527950e20403ff13eb1f0ba"
+  },
+  {
+   "id": "piece-p",
+   "file": "assembly-piece-p.stl",
+   "triangles": 56,
+   "size_mm": [
+    19.8,
+    19.8,
+    19.8
+   ],
+   "sha256": "985d4d7a15ee250f58a212d15ee9177c78ef7f8dd7f77ec45a31a71be9ccb430"
+  }
+ ]
+}
