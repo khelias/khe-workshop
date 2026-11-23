@@ -95,3 +95,9 @@ test('index layer counts use Estonian partitive singular kihti and English layer
   assert.doesNotMatch(etIndex, /\b\d+ kihte\b/);
   assert.match(enIndex, /\b\d+ layers,/);
 });
+
+test('the index shows one part on its stage', () => {
+  for (const name of ['index.html', join('en', 'index.html')]) {
+    assert.equal([...readFileSync(join(out, name), 'utf8').matchAll(STAGE_CONFIG)].length, 1, name);
+  }
+});

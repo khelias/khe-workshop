@@ -257,14 +257,22 @@ class Site:
 <span class="row__text">
 <span class="row__title">{esc(part['title'][lang])}</span>
 <span class="row__summary">{esc(part['summary'][lang])}</span>
-<span class="fact">{esc(facts)}</span>
 </span>
+<span class="fact row__fact">{esc(facts)}</span>
 </a>
 </li>""")
-        body = f"""<header class="room__head">
+        shown = self.parts[0]
+        shown_href = self.link(depth, f"{prefix}{shown['id']}/")
+        body = f"""<section class="band hero">
+<header class="hero__text">
 <h1>{t['room']}</h1>
 <p class="lead">{t['lead']}</p>
 </header>
+<div class="hero__stage">
+<p class="label"><a href="{shown_href}">{esc(shown['title'][lang])}</a></p>
+{self.stage(shown, lang, depth, replay_meta(self.replay_file(shown)))}
+</div>
+</section>
 <ul class="rows">
 {chr(10).join(rows)}
 </ul>"""
@@ -395,13 +403,15 @@ class Site:
         if credit:
             links = ", ".join(f'<a href="{esc(link["url"])}">{esc(link["label"])}</a>' for link in credit["links"])
             credit_html = f"<p>{esc(credit[lang])} {links}</p>"
-        body = f"""<header class="room__head">
+        body = f"""<section class="band">
+<header class="room__head">
 <p class="label"><a href="{self.link(depth, prefix)}">{t['back']}</a></p>
 <h1>{esc(part['title'][lang])}</h1>
 <p class="lead">{esc(part['summary'][lang])}</p>
 <p class="room__action"><a class="button" href="#files">{t['download']}</a></p>
 </header>
 {self.stage(part, lang, depth, meta)}
+</section>
 {note_html}
 <div class="blocks">
 <section class="block">
