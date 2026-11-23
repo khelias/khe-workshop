@@ -1,6 +1,6 @@
 # ADR-001: Published parts carry their proof, in OpenSCAD, with generated data committed
 
-- **Status:** Accepted (2026-11-19); point 1 superseded by [ADR-002](002-the-print-and-its-use-are-the-proof.md); point 3's budget raised from 5 to 10 MB on 2026-11-19, for the yarn bowl, before anything depended on the number
+- **Status:** Accepted (2026-11-24); point 1 superseded by [ADR-002](002-the-print-and-its-use-are-the-proof.md); point 3's budget raised from 5 to 10 MB on 2026-11-19, for the yarn bowl, before anything depended on the number; point 3 extended to assembly renders on 2026-11-24, for the Soma egg
 - **Related:** [estate ADR-043](https://github.com/khelias/khe-architecture/blob/main/decisions/043-household-parts-are-public-source-built-into-khe-sites.md)
 
 ## Context
@@ -21,9 +21,12 @@ the page, and licences that respect where each shape came from.
 3. **Generated page data is committed per published part, within 10 MB.** G-code
    cannot be made in CI, because the printer's slicer profile stays out of public
    repos. The STL files, the replay and the check results are written locally by
-   `scripts/build.py`, and the check proves they match the source. The budget is
-   there because every rebuild adds a full copy to the history and the page loads
-   the part's STL when it opens.
+   `scripts/build.py`, and the check proves they match the source. A part that
+   declares an `assembly` in `part.json` also commits a render of each item that
+   is not an export, `published/assembly-<item>.stl`: its pieces in place, shown in
+   the room's parts view and never offered as a download, within the same budget.
+   The budget is there because every rebuild adds a full copy to the history and
+   the page loads the part's STL when it opens.
 4. **Licences are per part.** The tools are MIT and our own models CC BY 4.0. The
    U6-LR holder is CC BY-NC 4.0 with credit, because its twist-lock was measured
    from Printables model 789473 by Peter H, which is CC BY-NC.

@@ -60,8 +60,16 @@ def air_starts(path: Path) -> list[tuple[float, float, float]]:
     return starts
 
 
-def render_path(tmp: Path, part: dict, export: dict) -> Path:
-    return tmp / f"{part['id']}-{export['file']}"
+def render_path(tmp: Path, part: dict, file: str) -> Path:
+    return tmp / f"{part['id']}-{file}"
+
+
+def render_failures(what: str, done: ws.Render, out: Path) -> list[str]:
+    if done.problems:
+        return [f"{what}: {line}" for line in done.problems]
+    if done.empty or not out.exists():
+        return [f"{what}: the render is empty"]
+    return []
 
 
 def check_exports(part: dict, tmp: Path, pool: ThreadPoolExecutor, failures: list[str]) -> list[dict]:
@@ -69,16 +77,13 @@ def check_exports(part: dict, tmp: Path, pool: ThreadPoolExecutor, failures: lis
     allowed = part.get("allowed_nonmanifold_edges", 0)
     if allowed and not part.get("allowed_nonmanifold_reason"):
         failures.append("allowed_nonmanifold_edges needs an allowed_nonmanifold_reason")
-    renders = [(export, render_path(tmp, part, export)) for export in part["exports"]]
+    renders = [(export, render_path(tmp, part, export["file"])) for export in part["exports"]]
     jobs = [pool.submit(ws.render, source, out, export["defines"]) for export, out in renders]
     results = []
     for (export, out), job in zip(renders, jobs):
-        done = job.result()
-        if done.problems:
-            failures.extend(f"{export['id']}: {line}" for line in done.problems)
-            continue
-        if done.empty or not out.exists():
-            failures.append(f"{export['id']}: the render is empty")
+        failed = render_failures(export["id"], job.result(), out)
+        if failed:
+            failures.extend(failed)
             continue
         mesh = ws.read_mesh(out)
         if mesh.nonmanifold_edges > allowed:
@@ -93,6 +98,30 @@ def check_exports(part: dict, tmp: Path, pool: ThreadPoolExecutor, failures: lis
         results.append({"id": export["id"], "file": export["file"], "triangles": mesh.triangles,
                         "size_mm": list(mesh.size), "volume_cm3": mesh.volume_cm3,
                         "nonmanifold_edges": mesh.nonmanifold_edges, "sha256": ws.sha256(out)})
+    return results
+
+
+def check_assembly(part: dict, tmp: Path, pool: ThreadPoolExecutor, failures: list[str]) -> list[dict]:
+    """Each item rendered from its own defines is clean and closed. It is shown, not printed, so the
+    bed and air-start checks do not apply."""
+    problems = ws.assembly_problems(part)
+    failures.extend(problems)
+    if problems:
+        return []
+    source = part["_dir"] / part["source"]
+    renders = [(item, render_path(tmp, part, ws.item_file(part, item))) for item in ws.rendered_items(part)]
+    jobs = [pool.submit(ws.render, source, out, item["defines"]) for item, out in renders]
+    results = []
+    for (item, out), job in zip(renders, jobs):
+        failed = render_failures(f"assembly {item['id']}", job.result(), out)
+        if failed:
+            failures.extend(failed)
+            continue
+        mesh = ws.read_mesh(out)
+        if mesh.nonmanifold_edges:
+            failures.append(f"assembly {item['id']}: {mesh.nonmanifold_edges} open or non-manifold edges")
+        results.append({"id": item["id"], "file": ws.item_file(part, item), "triangles": mesh.triangles,
+                        "size_mm": list(mesh.size), "sha256": ws.sha256(out)})
     return results
 
 
@@ -156,11 +185,10 @@ def check_published(part: dict, result: dict, tmp: Path, failures: list[str]) ->
         failures.append(f"built with OpenSCAD {build.get('openscad')}, this machine has {version}")
     same_platform = build.get("platform") == ws.platform_tag()
     if not same_platform:
-        rendered = {item["file"] for item in result["exports"]}
-        for export in part["exports"]:
-            stl = folder / export["file"]
-            if stl.exists() and export["file"] in rendered and not ws.same_surface(stl, render_path(tmp, part, export)):
-                failures.append(f"published/{export['file']} differs from a fresh render")
+        for name in [entry["file"] for entry in result["exports"] + result.get("assembly", [])]:
+            stl = folder / name
+            if stl.exists() and not ws.same_surface(stl, render_path(tmp, part, name)):
+                failures.append(f"published/{name} differs from a fresh render")
     published = ws.read_published(part, "check.json")
     if published is not None:
         fresh = json.loads(json.dumps(result))
@@ -240,6 +268,8 @@ def main() -> int:
             tmp = Path(folder)
             result = {"id": part["id"], "openscad": version, "exports": check_exports(part, tmp, pool, failures),
                       "probes": check_probes(part, tmp, pool, failures)}
+            if "assembly" in part:
+                result["assembly"] = check_assembly(part, tmp, pool, failures)
             results_file = ws.CHECK_RESULTS / f"{part['id']}.json"
             results_file.unlink(missing_ok=True)
             if not failures:

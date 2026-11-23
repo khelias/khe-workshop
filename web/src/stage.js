@@ -1,8 +1,9 @@
 // The part's stage: one slider drives the model, the cut and the replay of the real print.
 import * as THREE from '../vendor/three/three.module.js';
 import { OrbitControls } from '../vendor/three/OrbitControls.js';
+import { pathAt, reach } from './assembly.js';
 import { buildToolpaths, decodeReplay, formatDuration, layerAt, loadBytes, secondsToSlider, sliderToSeconds, verticesAt } from './replay.js';
-import { moveBy, parseStl, placeOnBed, trianglesWhere } from './stl.js';
+import { bounds, moveBy, parseStl, placeOnBed, trianglesWhere } from './stl.js';
 
 const SLIDER_MAX = 1000;
 const PLAY_MS = 24000;
@@ -50,6 +51,16 @@ function lineObject(set) {
   return lines;
 }
 
+function solidMaterial(colour, options = {}) {
+  return new THREE.MeshStandardMaterial({ color: colour, roughness: 0.5, side: THREE.DoubleSide, ...options });
+}
+
+function solidMesh(geometry, material) {
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.renderOrder = 2;
+  return mesh;
+}
+
 class Stage {
   constructor(root) {
     this.root = root;
@@ -63,7 +74,8 @@ class Stage {
     this.mark = root.querySelector('[data-stage-mark]');
     this.tabs = [...root.querySelectorAll('[data-view]')];
     this.view = 'model';
-    this.values = { model: 0, cut: SLIDER_MAX / 2, print: SLIDER_MAX * 0.55 };
+    this.values = { model: 0, cut: SLIDER_MAX / 2, print: SLIDER_MAX * 0.55, parts: (this.config.assembly?.start ?? 0) * SLIDER_MAX };
+    this.loads = {};
     this.visible = true;
     this.frame = 0;
     this.playing = 0;
@@ -90,14 +102,14 @@ class Stage {
     // It fills the stage mesh's groove exactly, so it is drawn a little nearer to win.
     this.inlay = this.addSolid(geometryOf(mesh), this.config.inlay.colour, { polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -4 });
     this.inlay.material.clippingPlanes = this.view === 'cut' ? this.clipped : NO_CLIP;
+    this.inlay.visible = this.view !== 'parts';
     this.invalidate();
   }
 
   addSolid(geometry, colour, options = {}) {
-    const material = new THREE.MeshStandardMaterial({ color: colour, roughness: 0.5, side: THREE.DoubleSide, ...options });
+    const material = solidMaterial(colour, options);
     this.materials.push(material);
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.renderOrder = 2;
+    const mesh = solidMesh(geometry, material);
     this.turntable.add(mesh);
     return mesh;
   }
@@ -170,14 +182,11 @@ class Stage {
     this.head = new THREE.Mesh(new THREE.SphereGeometry(Math.max(this.size[2] / 110, 1.1), 16, 12), new THREE.MeshBasicMaterial({ color: CAP }));
     this.turntable.add(this.head);
 
-    this.centre = new THREE.Vector3(0, this.size[2] / 2, 0);
-    this.radius = Math.hypot(...this.size) / 2;
+    this.partFrame = { centre: new THREE.Vector3(0, this.size[2] / 2, 0), radius: Math.hypot(...this.size) / 2 };
     this.camera = new THREE.PerspectiveCamera(30, 1, 1, 4000);
     this.controls = new OrbitControls(this.camera, this.canvas);
-    this.controls.target.copy(this.centre);
     this.controls.enablePan = false;
-    this.controls.minDistance = this.radius * 1.3;
-    this.controls.maxDistance = this.radius * 6;
+    this.frameOn(this.partFrame);
     this.controls.maxPolarAngle = Math.PI * 0.52;
     // A plain wheel scrolls the page past the stage; Ctrl or Cmd with the wheel zooms, as does a trackpad pinch, which Chrome and Firefox send with Ctrl.
     this.canvas.parentElement.addEventListener('wheel', (event) => {
@@ -210,9 +219,18 @@ class Stage {
     this.scene.add(this.cap);
   }
 
+  // What the camera keeps in view: the part, or in the parts view the items spread apart.
+  frameOn(frame) {
+    this.framing = frame;
+    this.controls.target.copy(frame.centre);
+    this.controls.minDistance = frame.radius * 1.3;
+    this.controls.maxDistance = frame.radius * 6;
+  }
+
   aim(azimuth, elevation) {
-    const distance = (this.radius / Math.sin((this.camera.fov * Math.PI) / 360)) * 1.12;
-    this.camera.position.setFromSphericalCoords(distance, Math.PI / 2 - elevation, azimuth).add(this.centre);
+    const { centre, radius } = this.framing;
+    const distance = (radius / Math.sin((this.camera.fov * Math.PI) / 360)) * 1.12;
+    this.camera.position.setFromSphericalCoords(distance, Math.PI / 2 - elevation, azimuth).add(centre);
     this.controls.update();
   }
 
@@ -252,21 +270,31 @@ class Stage {
     this.slider.setAttribute('aria-label', this.text.slider[view]);
     this.play.hidden = true;
     this.showStatus('');
+    if (view !== 'parts' && this.framing !== this.partFrame) {
+      this.frameOn(this.partFrame);
+      this.aim(0.62, 0.32);
+    }
     if (view === 'cut') this.aim(1.15, this.size[2] < 80 ? 0.55 : 0.2);
-    if (view === 'print' && !this.fullLines) {
+    // The print and parts views load their data when first opened.
+    const loader = { print: !this.fullLines && 'loadPaths', parts: !this.items && 'loadItems' }[view];
+    if (loader) {
       this.configureView();
       this.invalidate();
-      this.showStatus(this.text.loading);
-      this.loading ??= this.loadPaths();
+      this.showStatus(view === 'parts' ? this.text.loading_parts : this.text.loading);
+      this.loads[loader] ??= this[loader]();
       try {
-        await this.loading;
+        await this.loads[loader];
       } catch {
-        this.loading = null;
+        this.loads[loader] = null;
         this.showStatus(this.text.error);
         return;
       }
-      if (this.view !== 'print') return;
+      if (this.view !== view) return;
       this.showStatus('');
+    }
+    if (view === 'parts' && this.framing !== this.spreadFrame) {
+      this.frameOn(this.spreadFrame);
+      this.aim(0.62, 0.32);
     }
     this.play.hidden = view !== 'print' || this.still;
     this.configureView();
@@ -279,10 +307,12 @@ class Stage {
     this.meta = replay.meta;
     this.layerVertex = built.all.layerVertex;
     this.fullLines = lineObject(built.all);
+    this.fullLines.visible = this.view === 'print';
     this.turntable.add(this.fullLines);
     if (this.lite) {
       this.wallVertex = built.outer.layerVertex;
       this.wallLines = lineObject(built.outer);
+      this.wallLines.visible = this.view === 'print';
       this.turntable.add(this.wallLines);
     }
     this.startSeconds = this.meta.start_seconds ?? 0;
@@ -290,18 +320,44 @@ class Stage {
     if (change) this.mark.style.insetInlineStart = `${Math.min(secondsToSlider(change.seconds, 1, this.meta.seconds, this.startSeconds), 1) * 100}%`;
   }
 
+  async loadItems() {
+    const { items } = this.config.assembly;
+    const meshes = await Promise.all(items.map(async (item) => parseStl(await loadBytes(item.stl))));
+    const materials = new Map();
+    const group = new THREE.Group();
+    const spread = meshes.map((mesh, index) => {
+      moveBy(mesh, this.shift);
+      const { colour, path } = items[index];
+      if (!materials.has(colour)) materials.set(colour, solidMaterial(colour));
+      const solid = solidMesh(geometryOf(mesh), materials.get(colour));
+      solid.userData.path = path;
+      group.add(solid);
+      return { ...bounds(mesh.positions), path };
+    });
+    // Print coordinates are Z up, the scene Y up with print Y pointing away.
+    const { min, max } = reach(spread);
+    const centre = new THREE.Vector3((min[0] + max[0]) / 2, (min[2] + max[2]) / 2, -(min[1] + max[1]) / 2);
+    this.spreadFrame = { centre, radius: Math.hypot(max[0] - min[0], max[1] - min[1], max[2] - min[2]) / 2 };
+    group.visible = this.view === 'parts';
+    this.items = group;
+    this.turntable.add(group);
+  }
+
   // What depends on the view only, set once when the view opens.
   configureView() {
     const isCut = this.view === 'cut';
     const isPrint = this.view === 'print';
+    const isParts = this.view === 'parts';
     this.materials.forEach((material) => { material.clippingPlanes = isCut ? this.clipped : NO_CLIP; });
     this.cutMasks.visible = isCut;
     this.cap.visible = isCut;
-    this.body.visible = !isPrint;
+    this.body.visible = !isPrint && !isParts;
     if (this.base) this.base.visible = isPrint;
     this.ghost.visible = isPrint;
     this.head.visible = false;
-    if (this.top) this.top.visible = !isPrint;
+    if (this.top) this.top.visible = !isPrint && !isParts;
+    if (this.inlay) this.inlay.visible = !isParts;
+    if (this.items) this.items.visible = isParts;
     if (this.fullLines) this.fullLines.visible = isPrint;
     if (this.wallLines) this.wallLines.visible = isPrint;
     this.mark.hidden = !(isPrint && this.meta?.colour_changes.length);
@@ -315,6 +371,8 @@ class Stage {
       this.setReadout(this.text.turned.replace('{deg}', Math.round((value / SLIDER_MAX) * 360)));
     } else if (this.view === 'cut') {
       this.applyCut(value);
+    } else if (this.view === 'parts') {
+      if (this.items) this.applyParts(value);
     } else if (this.meta) {
       this.applyPrint(value);
     }
@@ -328,6 +386,12 @@ class Stage {
     this.cap.position.set(x, this.size[2] / 2, 0);
     const mm = Math.abs(x).toFixed(1).replace('.', this.config.lang === 'et' ? ',' : '.');
     this.setReadout(this.text.cut.replace('{mm}', mm));
+  }
+
+  applyParts(value) {
+    const t = value / SLIDER_MAX;
+    this.items.children.forEach((solid) => solid.position.set(...pathAt(solid.userData.path, t)));
+    this.setReadout(this.text.apart.replace('{pct}', Math.round(t * 100)));
   }
 
   applyPrint(value) {

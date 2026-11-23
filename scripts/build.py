@@ -16,10 +16,9 @@ def build(part: dict) -> None:
     folder.mkdir(exist_ok=True)
     source = part["_dir"] / part["source"]
     for export in part["exports"]:
-        out = folder / export["file"]
-        done = ws.render(source, out, export["defines"])
-        if done.problems or done.empty:
-            raise SystemExit(f"FAIL {part['id']}: {export['id']} did not render cleanly")
+        ws.render_or_exit(part, folder / export["file"], export["defines"], export["id"])
+    for item in ws.rendered_items(part):
+        ws.render_or_exit(part, folder / ws.item_file(part, item), item["defines"], f"assembly {item['id']}")
     replay = ws.REPLAYS / f"{part['id']}.bin.gz"
     if not replay.exists():
         raise SystemExit(f"FAIL {part['id']}: run scripts/replay.py first, {replay.name} is missing")

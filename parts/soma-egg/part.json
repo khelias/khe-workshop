@@ -1,0 +1,62 @@
+{
+  "id": "soma-egg",
+  "title": { "et": "Soma muna", "en": "Soma egg" },
+  "summary": {
+    "et": "Keeratava korgiga muna, mis läheb kinni ainult siis, kui seitse tükki on sees kuubikuks kokku pandud.",
+    "en": "A screw-top egg that closes only when the seven pieces inside are packed back into a cube."
+  },
+  "story": {
+    "et": "Soma kuubiku mõtles välja Piet Hein 1933. aastal: seitse tükki, igaüks kolmest või neljast väikesest kuubikust, saab kokku panna üheks 3 x 3 x 3 kuubikuks 240 eri moel. Süvend munas on täpselt selle kuubiku sügavune. Kui tükid on valesti, jääb mõni neist vähemalt väikese kuubiku jagu üle ääre ja kork ei lähe peale. Muna, kork ja tükid prinditakse ilma tugedeta.",
+    "en": "Piet Hein invented the Soma cube in 1933: seven pieces, each of three or four small cubes, pack into one 3 x 3 x 3 cube in 240 ways. The pocket in the egg is exactly that cube deep. Packed any other way, a piece stands at least a small cube above the rim and the cap will not go on. The egg, the cap and the pieces print without supports."
+  },
+  "licence": "CC-BY-4.0",
+  "credit": null,
+  "source": "soma-egg.scad",
+  "published": false,
+  "exports": [
+    { "id": "egg", "file": "soma-egg.stl", "defines": { "mode": "egg", "steps": 32, "rib_slices": 24 }, "title": { "et": "Muna koos korgiga", "en": "Egg with its cap" } },
+    { "id": "base", "file": "soma-egg-base.stl", "defines": { "mode": "base", "steps": 32, "rib_slices": 24 }, "title": { "et": "Alus", "en": "Base" } },
+    { "id": "cap", "file": "soma-egg-cap.stl", "defines": { "mode": "cap", "steps": 32, "rib_slices": 24 }, "title": { "et": "Kork", "en": "Cap" } },
+    { "id": "pieces", "file": "soma-egg-pieces.stl", "defines": { "mode": "pieces" }, "title": { "et": "Seitse tükki", "en": "Seven pieces" } },
+    { "id": "test-base", "file": "soma-egg-test-base.stl", "defines": { "mode": "test_base" }, "title": { "et": "Sobivusproov: alusrõngas", "en": "Fit test: base ring" } },
+    { "id": "test-cap", "file": "soma-egg-test-cap.stl", "defines": { "mode": "test_cap" }, "title": { "et": "Sobivusproov: korgirõngas", "en": "Fit test: cap ring" } },
+    { "id": "test-piece", "file": "soma-egg-test-piece.stl", "defines": { "mode": "test_piece" }, "title": { "et": "Sobivusproov: tükk", "en": "Fit test: piece" } }
+  ],
+  "stage_export": "egg",
+  "allowed_nonmanifold_edges": 0,
+  "assembly": {
+    "label": { "et": "Osad", "en": "Parts" },
+    "start": 0.3,
+    "items": [
+      { "id": "base", "export": "base", "colour": "#4b8fe0" },
+      { "id": "cap", "export": "cap", "colour": "#4b8fe0", "path": [[0, 0, 0, 0], [0.3, 0, 0, 75], [1, 0, 0, 75]] },
+      { "id": "piece-v", "defines": { "mode": "solved_piece", "piece": 0 }, "colour": "#e23a2e", "path": [[0, 0, 0, 0], [0.3, 0, 0, 0], [0.6, 0, 0, 45], [1, -13.3, -26.7, 55]] },
+      { "id": "piece-l", "defines": { "mode": "solved_piece", "piece": 1 }, "colour": "#f5f3ee", "path": [[0, 0, 0, 0], [0.3, 0, 0, 0], [0.6, 0, 0, 45], [1, -40, 30, 47.5]] },
+      { "id": "piece-t", "defines": { "mode": "solved_piece", "piece": 2 }, "colour": "#e23a2e", "path": [[0, 0, 0, 0], [0.3, 0, 0, 0], [0.6, 0, 0, 45], [1, 30, -40, 45]] },
+      { "id": "piece-z", "defines": { "mode": "solved_piece", "piece": 3 }, "colour": "#f5f3ee", "path": [[0, 0, 0, 0], [0.3, 0, 0, 0], [0.6, 0, 0, 45], [1, 0, -20, 35]] },
+      { "id": "piece-a", "defines": { "mode": "solved_piece", "piece": 4 }, "colour": "#e23a2e", "path": [[0, 0, 0, 0], [0.3, 0, 0, 0], [0.6, 0, 0, 45], [1, 20, 30, 52.5]] },
+      { "id": "piece-b", "defines": { "mode": "solved_piece", "piece": 5 }, "colour": "#f5f3ee", "path": [[0, 0, 0, 0], [0.3, 0, 0, 0], [0.6, 0, 0, 45], [1, 30, 30, 40]] },
+      { "id": "piece-p", "defines": { "mode": "solved_piece", "piece": 6 }, "colour": "#e23a2e", "path": [[0, 0, 0, 0], [0.3, 0, 0, 0], [0.6, 0, 0, 45], [1, -30, -10, 42.5]] }
+    ]
+  },
+  "replay": {
+    "last_layer": 228,
+    "rotate_deg": 0
+  },
+  "probes": {
+    "variant_heading": { "et": "Tükid", "en": "Pieces" },
+    "value_heading": { "et": "Mõõt", "en": "Measure" },
+    "each": { "et": "Kontrolliti:", "en": "Checked:" },
+    "variants": [
+      { "id": "cube-10", "label": { "et": "Kuubiku serv 10 mm", "en": "10 mm cubes" }, "defines": { "u": 10 } }
+    ],
+    "checks": [
+      { "id": "closed", "label": { "et": "Kokkupandud kuubik mahub munasse ja kork läheb peale", "en": "The packed cube fits and the cap goes on" }, "defines": { "mode": "closed", "pattern": "none" }, "expect": "clear" },
+      { "id": "raised", "label": { "et": "1,5 mm kõrgemale jäänud tükk ei lase korki peale", "en": "A piece standing 1.5 mm high stops the cap" }, "defines": { "mode": "raised", "lift": 1.5, "pattern": "none" }, "expect": "contact" },
+      { "id": "thread", "label": { "et": "Keermel on vahet, kork ei hõõrdu alusesse", "en": "The thread has play, the cap does not rub the base" }, "defines": { "mode": "thread", "pattern": "none" }, "expect": "clear" },
+      { "id": "side-gap", "label": { "et": "Kuubiku ja süvendi seina vahel on vähemalt 0,3 mm", "en": "At least 0.3 mm between the cube and the pocket wall" }, "defines": { "mode": "walls" }, "expect": "value", "log_key": "side_gap", "min": 0.3 },
+      { "id": "corner-wall", "label": { "et": "Süvendi nurga ja keerme vahel on vähemalt 1,5 mm seina", "en": "At least 1.5 mm of wall between the pocket corner and the thread" }, "defines": { "mode": "walls" }, "expect": "value", "log_key": "corner_wall", "min": 1.5 },
+      { "id": "bore-wall", "label": { "et": "Korgi sein on keerme kohal vähemalt 1,5 mm paks", "en": "The cap wall over the thread is at least 1.5 mm thick" }, "defines": { "mode": "walls" }, "expect": "value", "log_key": "bore_wall", "min": 1.5 }
+    ]
+  }
+}

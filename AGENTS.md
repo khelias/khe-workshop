@@ -23,15 +23,16 @@ This repo's own decisions: [docs/adr/](docs/adr/).
   `build/replay/<id>.bin.gz`, within 1.5 MB, from the part's `replay` settings.
   G-code stays out of git.
 - `python3 scripts/site_build.py <out> [--preview] [--base /workshop/]` - writes the
-  room's pages. `--preview` includes unpublished parts; without it the build verifies
+  room's pages. `--preview` includes unpublished parts that have a replay and
+  names the ones it leaves out; without it the build verifies
   each published part's files and proof and fails when none is published. `--base`
   is how khe-sites builds the room: root-relative URLs in the pages and the modules'
   imports, so its stamper versions them, `?v=` on the data files, and no language
   link of its own, since the site header switches language. Marker comments
   (`khe:head`, `khe:header`, `khe:footer`, `khe:consent`) are where khe-sites adds
   the family shell.
-- `node --test web/test/*.test.mjs` - the decoder, the slider and the loaders, and a
-  `--base` build of the published parts.
+- `node --test web/test/*.test.mjs` - the decoder, the slider, the loaders, the parts
+  view's paths, and a `--base` build of the published parts.
 - `npm run -s lint` - the family design check, against an empty baseline.
 - `parts/<id>/data/prep.py` - prepares a part's data from open sources, by hand, with
   the pinned `uv run` command in its docstring; never part of the check or CI
@@ -82,6 +83,13 @@ inside the stage mesh in the colour printed below the replay. `replay.tolerance`
 (1/100 mm, default 2) merges more for a replay over its budget, and an export's
 `defines` may lower `$fn` or a mesh resolution for a part over its 10 MB budget
 ([ADR-001](docs/adr/001-published-parts-carry-their-proof.md)).
+
+A part made of several pieces may declare an `assembly`: a tab `label` in et and en,
+the slider's `start` (0 to 1) and `items`, each an export by id or its own `defines`
+(rendered to `assembly-<item>.stl`, checked for a clean closed mesh but not as a
+print), a display `colour` and an optional `path` of `[t, dx, dy, dz]` rows, t
+rising from 0 to 1, linear between rows. The room then adds a fourth view, Parts,
+where one slider moves every item along its path (ADR-001).
 
 To publish a part: run the check, set `published: true` and fill `proof`
 (`printed` as `YYYY-MM-DD`, `use` in et and en, an optional `photo`;

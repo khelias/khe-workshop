@@ -249,6 +249,73 @@ def _grid(tris: list[tuple]) -> dict:
     return grid
 
 
+def rendered_items(part: dict) -> list[dict]:
+    """The assembly items rendered from their own defines; an export item reuses the export's file."""
+    return [item for item in (part.get("assembly") or {}).get("items", []) if "defines" in item]
+
+
+def item_file(part: dict, item: dict) -> str:
+    if "export" in item:
+        file = next((export["file"] for export in part["exports"] if export["id"] == item["export"]), None)
+        if file is None:
+            raise SystemExit(f"FAIL {part['id']}: assembly item {item.get('id')} names no export {item['export']!r}")
+        return file
+    return f"assembly-{item['id']}.stl"
+
+
+def render_or_exit(part: dict, out: Path, defines: dict, what: str) -> None:
+    done = render(part["_dir"] / part["source"], out, defines)
+    if done.problems or done.empty:
+        raise SystemExit(f"FAIL {part['id']}: {what} did not render cleanly")
+
+
+def _number(value: object) -> bool:
+    return type(value) in (int, float)
+
+
+def _path_ok(path: object) -> bool:
+    """Rows of [t, dx, dy, dz], t rising from 0 to 1."""
+    if not (isinstance(path, list) and len(path) >= 2
+            and all(isinstance(row, list) and len(row) == 4 and all(map(_number, row)) for row in path)):
+        return False
+    times = [row[0] for row in path]
+    return times[0] == 0 and times[-1] == 1 and all(b > a for a, b in zip(times, times[1:]))
+
+
+def assembly_problems(part: dict) -> list[str]:
+    """What is wrong with the shape of a part's assembly; the renders are checked apart."""
+    assembly = part.get("assembly")
+    if assembly is None:
+        return []
+    if not isinstance(assembly, dict):
+        return ["assembly is an object with label, start and items"]
+    problems = []
+    label = assembly.get("label") or {}
+    if not (isinstance(label, dict) and label.get("et") and label.get("en")):
+        problems.append("assembly.label needs et and en")
+    if not (_number(assembly.get("start")) and 0 <= assembly["start"] <= 1):
+        problems.append("assembly.start is a number from 0 to 1")
+    items = assembly.get("items")
+    if not (isinstance(items, list) and items and all(isinstance(item, dict) for item in items)):
+        return problems + ["assembly.items is a list of objects"]
+    exports = {export["id"] for export in part["exports"]}
+    seen = set()
+    for item in items:
+        name = item.get("id")
+        if not (isinstance(name, str) and re.fullmatch(r"[a-z0-9-]+", name)) or name in seen:
+            problems.append(f"assembly item {name!r} needs an id of its own in a-z, 0-9 and -")
+        seen.add(name)
+        if ("export" in item) == ("defines" in item):
+            problems.append(f"assembly item {name}: give either export or defines")
+        elif "export" in item and item["export"] not in exports:
+            problems.append(f"assembly item {name}: no export {item['export']!r}")
+        if not re.fullmatch(r"#[0-9a-fA-F]{6}", str(item.get("colour"))):
+            problems.append(f"assembly item {name}: colour is #rrggbb")
+        if "path" in item and not _path_ok(item["path"]):
+            problems.append(f"assembly item {name}: path rows are [t, dx, dy, dz], t rising from 0 to 1")
+    return problems
+
+
 def read_published(part: dict, name: str) -> dict | None:
     """A JSON object from published/, or None when it is missing or not an object."""
     try:
@@ -270,13 +337,13 @@ def published_problems(part: dict) -> list[str]:
     check = read_published(part, "check.json")
     if check is None:
         problems.append("published/check.json is missing or unreadable; run scripts/build.py")
-    named = {item.get("file"): item.get("sha256") for item in (check or {}).get("exports", []) if isinstance(item, dict)}
-    for export in part["exports"]:
-        stl = folder / export["file"]
-        if not stl.exists():
-            problems.append(f"published/{export['file']} is missing")
-        elif check is not None and sha256(stl) != named.get(export["file"]):
-            problems.append(f"published/{export['file']} is not the file published/check.json names")
+    named = {entry.get("file"): entry.get("sha256") for key in ("exports", "assembly")
+             for entry in (check or {}).get(key, []) if isinstance(entry, dict)}
+    for name in [export["file"] for export in part["exports"]] + [item_file(part, item) for item in rendered_items(part)]:
+        if not (folder / name).exists():
+            problems.append(f"published/{name} is missing")
+        elif check is not None and sha256(folder / name) != named.get(name):
+            problems.append(f"published/{name} is not the file published/check.json names")
     proof = part.get("proof") or {}
     printed = str(proof.get("printed"))
     try:

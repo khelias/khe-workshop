@@ -53,10 +53,11 @@ TEXT = {
         "terms": {"CC-BY-4.0": "Võid seda kasutada, muuta ja jagada, kui nimetad autori.",
                   "CC-BY-NC-4.0": "Võid seda kasutada, muuta ja jagada, kui nimetad autorid, aga mitte ärilisel eesmärgil."},
         "colour_change": "Värvivahetus",
-        "stage": {"play": "Mängi", "pause": "Paus", "loading": "Laen prinditööd", "error": "Vaadet ei õnnestunud laadida.",
+        "stage": {"play": "Mängi", "pause": "Paus", "loading": "Laen prinditööd", "loading_parts": "Laen osi", "error": "Vaadet ei õnnestunud laadida.",
                   "turned": "Pööratud {deg}°", "cut": "Lõige {mm} mm keskjoonest",
                   "print": "{time}, kiht {layer} / {total}",
-                  "slider": {"model": "Pööra detaili", "cut": "Liiguta lõiget", "print": "Keri printimise aega"}},
+                  "apart": "Lahti {pct}%",
+                  "slider": {"model": "Pööra detaili", "cut": "Liiguta lõiget", "print": "Keri printimise aega", "parts": "Võta osadeks"}},
     },
     "en": {
         "room": "Workshop",
@@ -77,10 +78,11 @@ TEXT = {
         "terms": {"CC-BY-4.0": "You may use, change and share it if you credit the author.",
                   "CC-BY-NC-4.0": "You may use, change and share it if you credit the authors, but not commercially."},
         "colour_change": "Colour change",
-        "stage": {"play": "Play", "pause": "Pause", "loading": "Loading the print", "error": "The view could not be loaded.",
+        "stage": {"play": "Play", "pause": "Pause", "loading": "Loading the print", "loading_parts": "Loading the parts", "error": "The view could not be loaded.",
                   "turned": "Turned {deg}°", "cut": "Cut {mm} mm from the centre",
                   "print": "{time}, layer {layer} of {total}",
-                  "slider": {"model": "Turn the part", "cut": "Move the cut", "print": "Scrub through the print"}},
+                  "apart": "{pct}% apart",
+                  "slider": {"model": "Turn the part", "cut": "Move the cut", "print": "Scrub through the print", "parts": "Take the part apart"}},
     },
 }
 
@@ -154,7 +156,14 @@ class Site:
     def __init__(self, out: Path, preview: bool, base: str | None = None) -> None:
         self.out = out
         self.base = base
-        self.parts = [part for part in ws.load_parts() if preview or part.get("published")]
+        self.parts = []
+        for part in ws.load_parts():
+            if not (preview or part.get("published")):
+                continue
+            if not part.get("published") and not (ws.REPLAYS / f"{part['id']}.bin.gz").exists():
+                print(f"note: {part['id']} is left out, it has no replay data yet")
+                continue
+            self.parts.append(part)
         if not preview:
             for part in self.parts:
                 problems = ws.published_problems(part)
@@ -207,9 +216,13 @@ class Site:
             if part.get("published"):
                 shutil.copyfile(part["_dir"] / "published" / export["file"], target)
             else:
-                done = ws.render(part["_dir"] / part["source"], target, export["defines"])
-                if done.problems or done.empty:
-                    raise SystemExit(f"FAIL {part['id']}: {export['id']} did not render cleanly")
+                ws.render_or_exit(part, target, export["defines"], export["id"])
+        for item in ws.rendered_items(part):
+            name = ws.item_file(part, item)
+            if part.get("published"):
+                shutil.copyfile(part["_dir"] / "published" / name, folder / name)
+            else:
+                ws.render_or_exit(part, folder / name, item["defines"], f"assembly {item['id']}")
 
     def page(self, lang: str, depth: int, title: str, description: str, paths: dict[str, str], body: str) -> str:
         """`paths` holds the page's path below the room's root in each language."""
@@ -314,8 +327,15 @@ class Site:
         }
         if initial != "model":
             config["initial"] = initial
-        tabs = "".join(f'<button type="button" class="stage__tab" data-view="{view}" aria-pressed="{str(view == initial).lower()}">{t[view]}</button>'
-                       for view in ("model", "cut", "print"))
+        views = [(view, t[view]) for view in ("model", "cut", "print")]
+        assembly = part.get("assembly")
+        if assembly:
+            config["assembly"] = {"start": assembly["start"], "items": [
+                {"stl": self.data_link(part, depth, ws.item_file(part, item)), "colour": item["colour"], "path": item.get("path")}
+                for item in assembly["items"]]}
+            views.append(("parts", assembly["label"][lang]))
+        tabs = "".join(f'<button type="button" class="stage__tab" data-view="{view}" aria-pressed="{str(view == initial).lower()}">{esc(label)}</button>'
+                       for view, label in views)
         data = json.dumps(config, ensure_ascii=False).replace("<", "\\u003c")
         return f"""<section class="stage" data-stage aria-label="{esc(part['title'][lang])}">
 <script type="application/json" data-stage-config>{data}</script>
