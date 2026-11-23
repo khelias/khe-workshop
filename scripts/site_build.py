@@ -270,7 +270,7 @@ class Site:
 </header>
 <div class="hero__stage">
 <p class="label"><a href="{shown_href}">{esc(shown['title'][lang])}</a></p>
-{self.stage(shown, lang, depth, replay_meta(self.replay_file(shown)))}
+{self.stage(shown, lang, depth, replay_meta(self.replay_file(shown)), initial="print")}
 </div>
 </section>
 <ul class="rows">
@@ -284,7 +284,7 @@ class Site:
             return ""
         return f'<img src="{esc(self.data_link(part, depth, photo))}" alt="{TEXT[lang]["photo"]}" loading="lazy">'
 
-    def stage(self, part: dict, lang: str, depth: int, meta: dict) -> str:
+    def stage(self, part: dict, lang: str, depth: int, meta: dict, initial: str = "model") -> str:
         t = TEXT[lang]
         files = {item["id"]: item["file"] for item in part["exports"]}
         first = meta.get("first_layer", 1)
@@ -312,7 +312,9 @@ class Site:
             "rotate": part["replay"]["rotate_deg"], "colour": meta["colour"], "first": first,
             "top": top, "below": below, "inlay": inlay, "bed": ws.BED_MM, "text": t["stage"],
         }
-        tabs = "".join(f'<button type="button" class="stage__tab" data-view="{view}" aria-pressed="{str(view == "model").lower()}">{t[view]}</button>'
+        if initial != "model":
+            config["initial"] = initial
+        tabs = "".join(f'<button type="button" class="stage__tab" data-view="{view}" aria-pressed="{str(view == initial).lower()}">{t[view]}</button>'
                        for view in ("model", "cut", "print"))
         data = json.dumps(config, ensure_ascii=False).replace("<", "\\u003c")
         return f"""<section class="stage" data-stage aria-label="{esc(part['title'][lang])}">

@@ -78,7 +78,8 @@ class Stage {
     this.buildScene(parseStl(await loadBytes(this.config.stl)));
     this.bindControls();
     this.root.dataset.ready = 'true';
-    this.setView('model');
+    const initial = this.config.initial === 'print' || this.config.initial === 'cut' ? this.config.initial : 'model';
+    this.setView(initial);
     // The inlay is a detail: the stage works without it, so a failed load leaves no error.
     inlay?.then((bytes) => this.addInlay(parseStl(bytes))).catch(() => {});
   }
@@ -249,23 +250,25 @@ class Stage {
     this.tabs.forEach((tab) => tab.setAttribute('aria-pressed', String(tab.dataset.view === view)));
     this.slider.value = this.values[view];
     this.slider.setAttribute('aria-label', this.text.slider[view]);
-    this.play.hidden = view !== 'print' || this.still;
+    this.play.hidden = true;
     this.showStatus('');
     if (view === 'cut') this.aim(1.15, this.size[2] < 80 ? 0.55 : 0.2);
     if (view === 'print' && !this.fullLines) {
+      this.configureView();
+      this.invalidate();
       this.showStatus(this.text.loading);
       this.loading ??= this.loadPaths();
       try {
         await this.loading;
       } catch {
         this.loading = null;
-        this.play.hidden = true;
         this.showStatus(this.text.error);
         return;
       }
       if (this.view !== 'print') return;
       this.showStatus('');
     }
+    this.play.hidden = view !== 'print' || this.still;
     this.configureView();
     this.apply();
   }
