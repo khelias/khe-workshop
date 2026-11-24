@@ -352,7 +352,7 @@ def assembly_problems(part: dict) -> list[str]:
     """What is wrong with the shape of a part's assembly; the renders are checked apart."""
     assembly = part.get("assembly")
     if assembly is None:
-        return []
+        return ["stage_items name assembly items, so they need an assembly"] if "stage_items" in part else []
     if not isinstance(assembly, dict):
         return ["assembly is an object with label, start and items"]
     problems = []
@@ -378,6 +378,9 @@ def assembly_problems(part: dict) -> list[str]:
             problems.append(f"assembly item {name}: colour is #rrggbb")
         if "path" in item and not _path_ok(item["path"]):
             problems.append(f"assembly item {name}: path rows are [t, dx, dy, dz], t rising from 0 to 1")
+    shown = part.get("stage_items")
+    if shown is not None and not (isinstance(shown, list) and shown and all(name in seen for name in shown)):
+        problems.append("stage_items are ids of assembly items, the colour parts the model view draws")
     return problems
 
 

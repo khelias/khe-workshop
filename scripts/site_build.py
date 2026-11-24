@@ -393,8 +393,10 @@ class Site:
                 {"stl": self.data_link(part, depth, ws.item_file(part, item)), "colour": item["colour"], "path": item.get("path")}
                 for item in assembly["items"]]}
             views.append(("parts", assembly["label"][lang]))
+        ids = [item["id"] for item in (assembly or {}).get("items", [])]
+        if part.get("stage_items"):
+            config["stageItems"] = [ids.index(name) for name in part["stage_items"]]
         if part.get("batch"):
-            ids = [item["id"] for item in assembly["items"]]
             config["batch"] = [{"title": plate["title"][lang], "items": [ids.index(name) for name in plate["items"]],
                                 "positions": ws.plate_layout(part, plate, lambda name: self.out / "data" / part["id"] / name)["positions"],
                                 **({"sliced": plate["sliced"]} if "sliced" in plate else {})}

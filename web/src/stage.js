@@ -18,6 +18,10 @@ const PAD_MARGIN = 12;
 const PAD_GAP = 24;
 const GRID_MM = 20;
 const GRID_COLOURS = ['#4c5961', '#3a454c'];
+// How far below the horizon the camera may go: in the model view far enough to see the part's
+// underside, elsewhere just under the bed's edge.
+const BELOW_MODEL = Math.PI * 0.97;
+const BELOW_OTHERS = Math.PI * 0.52;
 // Azimuth and elevation the camera starts from. A tall view looks along a row of plates, so they
 // stand one behind another and fill its height.
 const FIRST_AIM = [0.62, 0.32];
@@ -132,12 +136,21 @@ class Stage {
   async start() {
     const inlay = this.stagePlate?.inlay ? loadBytes(this.stagePlate.inlay.stl) : null;
     inlay?.catch(() => {});
+    // A part printed in several colours at once shows its colour parts; without them it shows one body.
+    const coloured = this.config.stageItems ? this.itemMeshes().catch(() => null) : null;
     this.buildScene(parseStl(await loadBytes(this.config.stl)));
     this.bindControls();
     this.root.dataset.ready = 'true';
     const { initial: asked } = this.config;
     const initial = asked === 'cut' || (asked === 'print' && this.plates.length) ? asked : 'model';
     this.setView(initial);
+    // The colour parts take the body's place once loaded; until then, or without them, the body shows.
+    coloured?.then((meshes) => {
+      if (!meshes) return;
+      this.addColourParts(meshes);
+      this.configureView();
+      this.invalidate(true);
+    });
     // The inlay is a detail: the stage works without it, so a failed load leaves no error.
     inlay?.then((bytes) => this.addInlay(parseStl(bytes))).catch(() => {});
   }
@@ -150,6 +163,18 @@ class Stage {
     this.inlay.material.clippingPlanes = this.view === 'cut' ? this.clipped : NO_CLIP;
     this.inlay.visible = this.view !== 'parts';
     this.invalidate(true);
+  }
+
+  // The colour parts in place of the one-colour body, in the model and cut views.
+  addColourParts(meshes) {
+    this.colourParts = new THREE.Group();
+    this.colourParts.position.set(...this.shift.map((value) => -value));
+    for (const index of this.config.stageItems) {
+      const material = this.itemMaterial(this.config.assembly.items[index].colour);
+      if (!this.materials.includes(material)) this.materials.push(material);
+      this.colourParts.add(solidMesh(meshes[index].geometry, material));
+    }
+    this.turntable.add(this.colourParts);
   }
 
   addSolid(geometry, colour, options = {}, parent = this.turntable) {
@@ -196,6 +221,7 @@ class Stage {
     ground.position.y = BED_TOP - BED_MM;
     ground.receiveShadow = true;
     scene.add(ground);
+    this.ground = ground;
 
     this.bedMaterial = new THREE.MeshStandardMaterial({ color: '#2b2d30', roughness: 0.7 });
     this.bed = this.bedSurface(this.config.bed, 0);
@@ -252,12 +278,15 @@ class Stage {
     this.controls = new OrbitControls(this.camera, this.canvas);
     this.controls.enablePan = false;
     this.frameOn(this.partFrame);
-    this.controls.maxPolarAngle = Math.PI * 0.52;
+    this.controls.maxPolarAngle = BELOW_OTHERS;
     // A plain wheel scrolls the page past the stage; Ctrl or Cmd with the wheel zooms, as does a trackpad pinch, which Chrome and Firefox send with Ctrl.
     this.canvas.parentElement.addEventListener('wheel', (event) => {
       if (!event.ctrlKey && !event.metaKey) event.stopPropagation();
     }, { capture: true, passive: true });
-    this.controls.addEventListener('change', () => this.invalidate());
+    this.controls.addEventListener('change', () => {
+      this.showFloor();
+      this.invalidate();
+    });
     this.aim(...FIRST_AIM);
   }
 
@@ -574,10 +603,14 @@ class Stage {
     const isPrint = this.view === 'print';
     const isParts = this.view === 'parts';
     const isPlate = this.view === 'plate';
+    this.controls.maxPolarAngle = this.view === 'model' ? BELOW_MODEL : BELOW_OTHERS;
+    // Leaving the model view from below brings the camera back up within the other views' limit.
+    this.controls.update();
     this.materials.forEach((material) => { material.clippingPlanes = isCut ? this.clipped : NO_CLIP; });
     this.cutMasks.visible = isCut;
     this.cap.visible = isCut;
-    this.body.visible = !isPrint && !isParts && !isPlate;
+    this.body.visible = !isPrint && !isParts && !isPlate && !this.colourParts;
+    if (this.colourParts) this.colourParts.visible = !isPrint && !isParts && !isPlate;
     if (this.base) this.base.visible = isPrint;
     if (this.ghost) this.ghost.visible = isPrint;
     this.head.visible = false;
@@ -593,8 +626,15 @@ class Stage {
     for (const mark of this.marks ?? []) mark.hidden = !isPrint;
     if (this.pads) this.pads.visible = isPrint;
     if (this.batchPads) this.batchPads.visible = this.batchCopies.visible = isPlate;
-    this.bed.visible = !isPlate && !(isPrint && this.pads);
+    this.showFloor();
     if (this.view !== 'model') this.turntable.rotation.z = 0;
+  }
+
+  // The bed and its shadow go when the camera looks from below them, so the part's underside shows.
+  showFloor() {
+    const below = this.controls.getPolarAngle() > BELOW_OTHERS;
+    this.ground.visible = !below;
+    this.bed.visible = !below && this.view !== 'plate' && !(this.view === 'print' && this.pads);
   }
 
   apply() {

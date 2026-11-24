@@ -115,7 +115,11 @@ the slider's `start` (0 to 1) and `items`, each an export by id or its own `defi
 (rendered to `assembly-<item>.stl`, checked for a clean closed mesh but not as a
 print), a display `colour` and an optional `path` of `[t, dx, dy, dz]` rows, t
 rising from 0 to 1, linear between rows. The room then adds a fourth view, Parts,
-where one slider moves every item along its path (ADR-001).
+where one slider moves every item along its path (ADR-001). A part printed in several
+colours at once may name `stage_items`, the assembly items the Model and Cut views draw
+in their colours in place of the one-colour `stage_export`, which still frames the
+stage and fills the cut. In the Model view the camera may go below the part, and the
+bed hides while it does.
 
 A part may also list `batch` plates for the room's fifth view, Plate: each an `id`, a
 `title` in et and en, the assembly `items` one copy is made of, a `pitch` in mm and,

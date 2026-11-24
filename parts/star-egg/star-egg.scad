@@ -117,22 +117,23 @@ module mark2d(part) {
     }
 }
 
-module mark(part) intersection() {
-    translate([0, 0, bottom_z - 1]) linear_extrude(1.6) mirror([1, 0, 0]) mark2d(part);
-    translate([0, 0, bottom_z]) cylinder(r = 15, h = mark_depth);
-}
+module mark_letters(part) translate([0, 0, bottom_z - 1]) linear_extrude(1 + mark_depth) mirror([1, 0, 0]) mark2d(part);
+
+module mark(part) intersection() { mark_letters(part); translate([0, 0, bottom_z]) cylinder(r = 15, h = mark_depth); }
 
 module slab(b) translate([-egg_b, -egg_b, b[0]]) cube([2 * egg_b, 2 * egg_b, b[1] - b[0]]);
 
-module base_band(n) difference() { intersection() { base(); slab(base_bands[n]); } mark(0); mark(1); }
+// The letters reach below the bottom when they are cut out, so the band keeps no sheet of the
+// bottom face over them.
+module base_band(n) difference() { intersection() { base(); slab(base_bands[n]); } mark_letters(0); mark_letters(1); }
 
 module cap_band(n) intersection() { cap(); slab(cap_bands[n]); }
 
 module base_body() difference() {
     base();
     star_cutter(false);
-    mark(0);
-    mark(1);
+    mark_letters(0);
+    mark_letters(1);
     for (b = base_bands) slab(b);
 }
 

@@ -196,6 +196,9 @@ test('a draft is labelled beside its title and on its index row, with no print v
   assert.match(readFileSync(join(out, 'en', name), 'utf8'), /<span class="room__draft">Draft, not printed yet<\/span>/);
   const config = stageConfig(name);
   assert.deepEqual(config.plates, []);
+  assert.deepEqual(config.stageItems.map((index) => config.assembly.items[index].colour),
+    ['#c42d26', '#f2efe8', '#f2efe8', '#c42d26', '#2f8f4e', '#f2b81f', '#2f8f4e', '#f2b81f', '#c42d26', '#f2efe8', '#f2b81f', '#2f8f4e', '#2f8f4e', '#2f8f4e'],
+    'the model view draws both halves in their colours');
   assert.equal(config.colour, '#c42d26');
   assert.ok(!page.includes('data-view="print"'));
   assert.doesNotMatch(facts(name), /<dt>(?:Kihte|Printimise aeg|Materjal)<\/dt>/);

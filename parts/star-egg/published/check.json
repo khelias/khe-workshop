@@ -70,7 +70,7 @@
   {
    "id": "base-band-0",
    "file": "star-egg-base-band-0.stl",
-   "triangles": 5634,
+   "triangles": 5682,
    "size_mm": [
     33.608,
     33.608,
@@ -78,7 +78,7 @@
    ],
    "volume_cm3": 4.4,
    "nonmanifold_edges": 0,
-   "sha256": "1e2201e3f8d9d52780cc893ac1b27a9e5fbfd4575e008f577be957c1fba24e95"
+   "sha256": "58dc0356374846887111426bbd76d397c2aef06f26ee088aec46d021a8d53ba0"
   },
   {
    "id": "base-band-1",

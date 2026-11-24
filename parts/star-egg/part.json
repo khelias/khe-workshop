@@ -296,6 +296,22 @@
     }
   ],
   "stage_export": "egg",
+  "stage_items": [
+    "base",
+    "base-stars",
+    "base-mark",
+    "base-mark-accent",
+    "base-band-0",
+    "base-band-1",
+    "base-band-2",
+    "base-band-3",
+    "cap",
+    "cap-stars",
+    "cap-band-0",
+    "cap-band-1",
+    "cap-band-2",
+    "cap-band-3"
+  ],
   "allowed_nonmanifold_edges": 0,
   "assembly": {
     "label": {
@@ -891,7 +907,7 @@
       ],
       "pitch": 51,
       "sliced": {
-        "seconds": 48920,
+        "seconds": 48924,
         "changes": 55
       }
     },
