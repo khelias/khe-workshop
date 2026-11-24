@@ -2,12 +2,12 @@
   "id": "yarn-bowl",
   "title": { "et": "Lõngakauss", "en": "Yarn bowl" },
   "summary": {
-    "et": "Kauss paksu lõnga kerale, keerdus ribide ja konksuga lõngajuhikuga.",
+    "et": "Kauss paksu lõnga kerale: keerdus ribid ja konksuga lõngajuhik.",
     "en": "A bowl for a ball of thick yarn, with twisted ribs and a hooked yarn guide."
   },
   "story": {
-    "et": "Kera on kausis ja lõng jookseb pilust välja, nii et kera ei veere kudumise ajal põrandale. Pilu algab äärest lehtrina, läheb alla ja kaardub lõpus konksuna üles, nii et otse üles tõmmatud lõng jääb seina taha. Konksu ja pilu vahel olev sein liitub kausiga alles konksu kohal, nii et prindi ajal hoiavad seda õhukesed ribid, mis murtakse pärast tangidega ära. Põhja all on tempel, mis prinditi kolmes alumises kihis teist värvi.",
-    "en": "The ball sits in the bowl and the yarn runs out through the guide, so the ball does not roll off while you knit. The guide starts as a funnel at the rim, runs down and turns up into a hook at the end, so yarn pulled straight up meets the wall. The wall between the guide and the hook joins the bowl only above the hook, so thin ribs hold it up during the print and are snapped off with pliers afterwards. The stamp underneath was printed in a second colour in the bottom three layers."
+    "et": "Lõngakera istub kausis ja lõng jookseb pilust välja. Pilu algab äärest lehtrina, läheb alla ja kaardub lõpus konksuna üles, nii et otse üles tõmmatud lõng jääb seina taha. Konksu ja pilu vahel olev sein liitub kausiga alles konksu kohal, nii et printimise ajal hoiavad seda õhukesed ribid, mis murtakse pärast tangidega ära. Põhja all on tempel, mis prinditi kolmes alumises kihis teist värvi.",
+    "en": "The ball sits in the bowl and the yarn runs out through the guide. The guide starts as a funnel at the rim, runs down and turns up into a hook at the end, so yarn pulled straight up meets the wall. The wall between the guide and the hook joins the bowl only above the hook, so thin ribs hold it up during the print and are snapped off with pliers afterwards. The stamp underneath was printed in a second colour in the bottom three layers."
   },
   "licence": "CC-BY-4.0",
   "credit": null,
@@ -22,7 +22,7 @@
   },
   "exports": [
     { "id": "bowl", "file": "yarn-bowl.stl", "defines": { "mode": "bowl", "$fn": 96 }, "title": { "et": "Kauss", "en": "Bowl" } },
-    { "id": "stamp", "file": "yarn-bowl-stamp.stl", "defines": { "mode": "stamp", "$fn": 96 }, "title": { "et": "Tempel teist värvi", "en": "Stamp in a second colour" } }
+    { "id": "stamp", "file": "yarn-bowl-stamp.stl", "defines": { "mode": "stamp", "$fn": 96 }, "title": { "et": "Teist värvi tempel", "en": "Stamp in a second colour" } }
   ],
   "stage_export": "bowl",
   "stage_inlay": "stamp",
@@ -34,13 +34,13 @@
     "rotate_deg": 0,
     "before_label": { "et": "valge tempel", "en": "stamp in white" },
     "note": {
-      "et": "Siin on päris prinditöö alates kihist 4. Kolm alumist kihti olid pere oma tempel, need jäid välja ja nende asemel on avalik tempel.",
+      "et": "Siin on päris prinditöö alates 4. kihist. Kolmes alumises kihis oli pere oma tempel, need kihid jäid välja ja nende asemel on avalik tempel.",
       "en": "The replay is the real print from layer 4. The first three layers were the family's own stamp, so they are left out and the public stamp appears instead."
     }
   },
   "probes": {
     "variant_heading": { "et": "Lõng", "en": "Yarn" },
-    "value_heading": { "et": "Vaba ruumi küljel", "en": "Side clearance" },
+    "value_heading": { "et": "Vaba ruum küljel", "en": "Side clearance" },
     "each": { "et": "Iga lõngaga kontrolliti:", "en": "Tested with each yarn:" },
     "variants": [
       { "id": "yarn-4", "label": { "et": "Peenike, 4 mm", "en": "Fine, 4 mm" }, "defines": { "yarn_d": 4 } },

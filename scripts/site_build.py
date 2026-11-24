@@ -37,44 +37,44 @@ LICENCES = {
 TEXT = {
     "et": {
         "room": "Töökoda",
-        "lead": "Detailid, mille oleme oma kodu jaoks ise kavandanud ja printinud. Igaüht saab keerata, lõigata ja vaadata, kuidas see kiht kihi haaval valmis sai.",
+        "lead": "Detailid, mille oleme oma kodu jaoks ise kavandanud ja printinud. Igaüht saab keerata, pooleks lõigata ja vaadata, kuidas see kiht kihi haaval valmis.",
         "other": "English", "back": "Kõik detailid", "views": "Vaade",
         "model": "Mudel", "cut": "Lõige", "print": "Printimine",
-        "why": "Miks see olemas on", "proof": "Mida kontroll tõestas", "facts": "Prinditöö",
+        "why": "Detailist", "proof": "Kontroll", "facts": "Prinditöö",
         "files": "Failid", "licence": "Litsents", "source": "Lähtekood (OpenSCAD)",
         "size": "Mõõdud", "layers": "Kihte", "layers_one": "kiht", "layers_many": "kihti", "time": "Printimise aeg", "filament": "Filamenti",
-        "material": "Materjal", "layer_height": "Kihi kõrgus", "infill": "Täidis", "walls": "Seinu", "supports": "Tugi",
+        "material": "Materjal", "layer_height": "Kihi kõrgus", "infill": "Täide", "walls": "Seinu", "supports": "Toed",
         "yes": "On", "no": "Pole",
         "result": "Tulemus",
-        "passed": "{n} katset läbitud", "failed": "Katse ebaõnnestus",
-        "closed": "{name}: suletud kuju, mahub printeri {bed} mm alusele.",
-        "closed_many": "{n} faili on suletud kujuga ja mahuvad printeri {bed} mm alusele.",
-        "open": "{name}: mahub printeri {bed} mm alusele. {reason}",
-        "nowebgl": "Kolmemõõtmeline vaade vajab JavaScripti ja WebGL-i, mida see brauser ei paku.",
+        "passed_one": "1 kontroll läbitud", "passed": "{n} kontrolli läbitud", "failed": "Kontroll ebaõnnestus",
+        "closed": "{name}: terviklik mudel, mahub printeri {bed} mm prindialusele.",
+        "closed_many": "{n} terviklikku mudelit, kõik mahuvad printeri {bed} mm prindialusele.",
+        "open": "{name}: mahub printeri {bed} mm prindialusele. {reason}",
+        "nowebgl": "3D-vaade vajab JavaScripti ja WebGL-i, mida see brauser ei toeta.",
         "photo": "Foto prinditud detailist", "download": "Laadi alla", "printed": "Prinditud {date}.",
         "terms": {"CC-BY-4.0": "Võid seda kasutada, muuta ja jagada, kui nimetad autori.",
                   "CC-BY-NC-4.0": "Võid seda kasutada, muuta ja jagada, kui nimetad autorid, aga mitte ärilisel eesmärgil."},
         "plate": "Plaat", "total": "Kokku", "plates_row": "{n} plaati, {time}", "tests": "Sobivusproovid",
-        "stage": {"play": "Mängi", "pause": "Paus", "loading": "Laen prinditööd", "loading_parts": "Laen osi", "error": "Vaadet ei õnnestunud laadida.",
+        "stage": {"play": "Esita", "pause": "Paus", "loading": "Laadin prinditööd", "loading_parts": "Laadin osi", "error": "Vaadet ei õnnestunud laadida.",
                   "turned": "Pööratud {deg}°", "cut": "Lõige {mm} mm keskjoonest",
-                  "print": "{time}, kiht {layer} / {layers}",
+                  "print": "{time}, kiht {layer}/{layers}",
                   "print_plates": "{time} / {total}, plaat {plate}/{plates}, kiht {layer}/{layers}",
-                  "plate_mark": "Uus plaat", "colour_change": "Värvivahetus",
-                  "apart": "Lahti {pct}%",
-                  "slider": {"model": "Pööra detaili", "cut": "Liiguta lõiget", "print": "Keri printimise aega", "parts": "Võta osadeks"}},
+                  "plate_mark": "Järgmine plaat", "colour_change": "Värvivahetus",
+                  "apart": "Lahti võetud {pct}%",
+                  "slider": {"model": "Pööra detaili", "cut": "Liiguta lõiget", "print": "Keri prinditööd", "parts": "Võta osadeks"}},
     },
     "en": {
         "room": "Workshop",
         "lead": "Parts we designed and printed for our own home. Turn each one, cut it open and watch how it was built, layer by layer.",
         "other": "Eesti", "back": "All parts", "views": "View",
         "model": "Model", "cut": "Cut", "print": "Print",
-        "why": "Why it exists", "proof": "What the check proved", "facts": "The print",
+        "why": "About the part", "proof": "Checks", "facts": "The print",
         "files": "Files", "licence": "Licence", "source": "Source (OpenSCAD)",
         "size": "Size", "layers": "Layers", "layers_one": "layer", "layers_many": "layers", "time": "Print time", "filament": "Filament",
         "material": "Material", "layer_height": "Layer height", "infill": "Infill", "walls": "Walls", "supports": "Supports",
         "yes": "Yes", "no": "No",
         "result": "Result",
-        "passed": "{n} tests passed", "failed": "A test failed",
+        "passed_one": "1 check passed", "passed": "{n} checks passed", "failed": "A check failed",
         "closed": "{name}: a closed solid that fits the printer's {bed} mm bed.",
         "closed_many": "{n} files are closed solids that fit the printer's {bed} mm bed.",
         "open": "{name}: fits the printer's {bed} mm bed. {reason}",
@@ -425,7 +425,7 @@ class Site:
                 checks = variant["checks"]
                 value = next((item["value"] for item in checks if item.get("value") is not None), None)
                 passed = all(item["passed"] for item in checks)
-                outcome = t["passed"].format(n=len(checks)) if passed else t["failed"]
+                outcome = (t["passed_one"] if len(checks) == 1 else t["passed"].format(n=len(checks))) if passed else t["failed"]
                 clearance = f"{number(value, lang, 2)} mm" if value is not None else ""
                 rows.append(f'<tr><th scope="row">{esc(variant["label"][lang])}</th><td class="fact">{clearance}</td><td>{esc(outcome)}</td></tr>')
             labels = "".join(f"<li>{esc(item['label'][lang])}</li>" for item in results["probes"][0]["checks"])

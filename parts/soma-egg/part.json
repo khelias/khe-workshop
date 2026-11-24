@@ -53,7 +53,7 @@
   ],
   "probes": {
     "variant_heading": { "et": "Tükid", "en": "Pieces" },
-    "value_heading": { "et": "Mõõt", "en": "Measure" },
+    "value_heading": { "et": "Küljevahe", "en": "Side gap" },
     "each": { "et": "Kontrolliti:", "en": "Checked:" },
     "variants": [
       { "id": "cube-10", "label": { "et": "Kuubiku serv 10 mm", "en": "10 mm cubes" }, "defines": { "u": 10 } }
@@ -61,7 +61,7 @@
     "checks": [
       { "id": "closed", "label": { "et": "Kokkupandud kuubik mahub munasse ja kork läheb peale", "en": "The packed cube fits and the cap goes on" }, "defines": { "mode": "closed", "pattern": "none" }, "expect": "clear" },
       { "id": "raised", "label": { "et": "1,5 mm kõrgemale jäänud tükk ei lase korki peale", "en": "A piece standing 1.5 mm high stops the cap" }, "defines": { "mode": "raised", "lift": 1.5, "pattern": "none" }, "expect": "contact" },
-      { "id": "thread", "label": { "et": "Keermel on vahet, kork ei hõõrdu alusesse", "en": "The thread has play, the cap does not rub the base" }, "defines": { "mode": "thread", "pattern": "none" }, "expect": "clear" },
+      { "id": "thread", "label": { "et": "Keermel on lõtk, kork ei hõõru vastu alust", "en": "The thread has play, the cap does not rub the base" }, "defines": { "mode": "thread", "pattern": "none" }, "expect": "clear" },
       { "id": "side-gap", "label": { "et": "Kuubiku ja süvendi seina vahel on vähemalt 0,3 mm", "en": "At least 0.3 mm between the cube and the pocket wall" }, "defines": { "mode": "walls" }, "expect": "value", "log_key": "side_gap", "min": 0.3 },
       { "id": "corner-wall", "label": { "et": "Süvendi nurga ja keerme vahel on vähemalt 1,5 mm seina", "en": "At least 1.5 mm of wall between the pocket corner and the thread" }, "defines": { "mode": "walls" }, "expect": "value", "log_key": "corner_wall", "min": 1.5 },
       { "id": "bore-wall", "label": { "et": "Korgi sein on keerme kohal vähemalt 1,5 mm paks", "en": "The cap wall over the thread is at least 1.5 mm thick" }, "defines": { "mode": "walls" }, "expect": "value", "log_key": "bore_wall", "min": 1.5 }

@@ -136,8 +136,8 @@ test('the facts of a part on several plates have a row per plate and the total, 
   assert.match(facts(join('en', 'soma-egg', 'index.html')), /<th scope="row">Total<\/th><td><\/td><td class="fact">2 h 18 min<\/td><td class="fact">58 g<\/td>/);
   const tower = facts(join('capsule-tower', 'index.html'));
   assert.match(tower, /Kokku<\/th><td><\/td><td class="fact">15 h 47 min<\/td><td class="fact">603 g<\/td>/);
-  assert.match(tower, /<dt>Täidis<\/dt><dd class="fact">10%, 15%<\/dd>/, 'settings that differ list each value');
-  assert.match(egg, /<dt>Täidis<\/dt><dd class="fact">15%<\/dd>/, 'a shared setting is listed once');
+  assert.match(tower, /<dt>Täide<\/dt><dd class="fact">10%, 15%<\/dd>/, 'settings that differ list each value');
+  assert.match(egg, /<dt>Täide<\/dt><dd class="fact">15%<\/dd>/, 'a shared setting is listed once');
   const bowl = facts(join('yarn-bowl', 'index.html'));
   assert.doesNotMatch(bowl, /Kokku|class="swatch"/, 'a part on one plate has no plate table');
   assert.match(bowl, /<dt>Kihte<\/dt>/);
@@ -153,8 +153,8 @@ test('fit tests are listed apart under their heading, and closed exports share o
     assert.match(tests.slice(0, tests.indexOf('</ul>')), /test/, `${name} lists its fit tests under the heading`);
   }
   const egg = readFileSync(join(out, 'soma-egg', 'index.html'), 'utf8');
-  assert.match(egg, /<li>7 faili on suletud kujuga ja mahuvad printeri 260 mm alusele\.<\/li>/);
-  assert.equal((egg.match(/suletud kuju, mahub/g) ?? []).length, 0);
+  assert.match(egg, /<li>7 terviklikku mudelit, kõik mahuvad printeri 260 mm prindialusele\.<\/li>/);
+  assert.equal((egg.match(/terviklik mudel, mahub/g) ?? []).length, 0);
 });
 
 test('index layer counts use Estonian partitive singular kihti and English layers', () => {

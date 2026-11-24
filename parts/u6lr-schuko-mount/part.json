@@ -2,16 +2,16 @@
   "id": "u6lr-schuko-mount",
   "title": { "et": "U6-LR hoidik pistikupessa", "en": "U6-LR socket mount" },
   "summary": {
-    "et": "Hoiab UniFi U6-LR pääsupunkti seinakontaktis ilma kruvideta.",
+    "et": "Hoiab UniFi U6-LR pääsupunkti pistikupesas ilma kruvideta.",
     "en": "Holds a UniFi U6-LR access point on a wall socket, with no screws."
   },
   "story": {
-    "et": "Üks prinditud detail läheb tavalisse Schuko pistikupessa. Pesa maandusklemmid hoiavad seda kinni, tugi toetub allpool oleva pesa kaanele ja võrgukaabel jookseb plaadi tagant küljele. Detailis pole metalli ega elektrit.",
+    "et": "Üks prinditud detail läheb tavalisse Schuko pistikupessa. Pesa maandusklemmid hoiavad seda kinni, alumine tugipind toetub allpool oleva pesa kaanele ja võrgukaabel jookseb plaadi tagant küljele. Detailis pole metalli ega elektrilisi osi.",
     "en": "One printed part plugs into an ordinary Schuko socket. The socket's earth clips hold it, a pad rests on the cover of the socket below and the network cable leaves sideways behind the plate. The part has no metal and carries no power."
   },
   "licence": "CC-BY-NC-4.0",
   "credit": {
-    "et": "Keeratava luku kuju on mõõdetud Peter H mudelist, mis põhineb kasutaja magu mudelil. Mõlema litsents on CC BY-NC 4.0.",
+    "et": "Keeratava luku kuju on mõõdetud Peter H mudelilt, mis põhineb kasutaja magu mudelil. Mõlema litsents on CC BY-NC 4.0.",
     "en": "The twist-lock profile is measured from a model by Peter H, which is based on a model by magu. Both are licensed CC BY-NC 4.0.",
     "links": [
       { "label": "Peter H, Printables 789473", "url": "https://www.printables.com/model/789473" },
@@ -35,7 +35,7 @@
   "stage_export": "mount",
   "allowed_nonmanifold_edges": 4,
   "allowed_nonmanifold_reason": {
-    "et": "Neli serva, kus luku piiraja kohtub faasiga, puutuvad kokku joonena. Just selline kuju prinditi.",
+    "et": "Neli serva, kus luku piiraja kohtub faasiga, puutuvad kokku piki üht joont. Just selline kuju prinditi.",
     "en": "Four edges where the twist-lock stop meets the chamfer touch along a line. This is the geometry that was printed."
   },
   "replay": { "last_layer": 170, "rotate_deg": 0, "note": null },

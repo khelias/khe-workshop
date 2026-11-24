@@ -6,7 +6,7 @@
     "en": "A rotating tower for coffee capsules: six rows of five."
   },
   "story": {
-    "et": "Kapslid lähevad reale ülevalt sisse ja tulevad alt välja. Foolium jääb väljapoole, nii et iga rea kohv on näha.",
+    "et": "Kapslid lähevad ülevalt ritta sisse ja tulevad alt välja. Foolium jääb väljapoole, nii et iga rea kohv on näha.",
     "en": "Capsules drop into a row from the top and come out at the bottom. The foil faces outward, so each row shows its coffee."
   },
   "licence": "CC-BY-4.0",
@@ -33,7 +33,7 @@
       "rotate_deg": 90,
       "after_label": { "et": "valge tempel", "en": "stamp in white" },
       "note": {
-        "et": "Siin on päris prinditöö kuni kihini 1238. Viimased neli kihti olid pere oma tempel, need jäid välja ja nende asemel on avalik tempel.",
+        "et": "Siin on päris prinditöö kuni 1238. kihini. Viimases neljas kihis oli pere oma tempel, need kihid jäid välja ja nende asemel on avalik tempel.",
         "en": "The replay is the real print up to layer 1238. The last four layers were the family's own stamp, so they are left out and the public stamp appears instead."
       }
     },
@@ -41,7 +41,7 @@
   ],
   "probes": {
     "variant_heading": { "et": "Kapsel", "en": "Capsule" },
-    "value_heading": { "et": "Vaba ruumi küljel", "en": "Side clearance" },
+    "value_heading": { "et": "Vaba ruum küljel", "en": "Side clearance" },
     "each": { "et": "Iga kapsliga kontrolliti:", "en": "Tested with each capsule:" },
     "variants": [
       { "id": "rim-44", "label": { "et": "Serv 44 mm", "en": "44 mm rim" }, "defines": { "cap_rim": 44, "cap_body": 39.5, "cap_h": 26.6 } },

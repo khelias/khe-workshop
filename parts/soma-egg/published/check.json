@@ -123,7 +123,7 @@
     {
      "id": "thread",
      "label": {
-      "et": "Keermel on vahet, kork ei hõõrdu alusesse",
+      "et": "Keermel on lõtk, kork ei hõõru vastu alust",
       "en": "The thread has play, the cap does not rub the base"
      },
      "passed": true,
