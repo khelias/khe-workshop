@@ -168,12 +168,13 @@ test('index layer counts use Estonian partitive singular kihti and English layer
   assert.match(etIndex, />2 plaati, 15 h 47 min</);
 });
 
-test('a part has the model, cut and print views, and parts only with an assembly', () => {
+test('a part has the model and cut views, print with a replay, parts with an assembly and plate with a batch', () => {
   for (const name of files.filter((file) => /^(?:en\/)?[\w-]+\/index\.html$/.test(file))) {
     const page = readFileSync(join(out, name), 'utf8');
     const views = [...page.matchAll(/data-view="(\w+)"/g)].map((match) => match[1]);
-    const { assembly } = stageConfig(name);
-    assert.deepEqual(views, assembly ? ['model', 'cut', 'print', 'parts'] : ['model', 'cut', 'print'], name);
+    const { assembly, plates, batch } = stageConfig(name);
+    const expected = ['model', 'cut', ...(plates.length ? ['print'] : []), ...(assembly ? ['parts'] : []), ...(batch ? ['plate'] : [])];
+    assert.deepEqual(views, expected, name);
     for (const item of assembly?.items ?? []) assert.ok(resolves(item.stl), `${name} links ${item.stl}, which the build did not write`);
   }
   assert.ok(stageConfig(join('soma-egg', 'index.html')).assembly, 'the Soma egg has its parts view');
@@ -186,4 +187,37 @@ test('the index shows one part on its stage, starting in print replay', () => {
     assert.equal(stageConfig(name).initial, 'print', name);
   }
   assert.equal(stageConfig(join('capsule-tower', 'index.html')).initial, undefined);
+});
+
+test('a draft is labelled beside its title and on its index row, with no print view or print facts', () => {
+  const name = join('star-egg', 'index.html');
+  const page = readFileSync(join(out, name), 'utf8');
+  assert.match(page, /<h1>Kaheksakandi muna <span class="room__draft">Kavand, veel printimata<\/span><\/h1>/);
+  assert.match(readFileSync(join(out, 'en', name), 'utf8'), /<span class="room__draft">Draft, not printed yet<\/span>/);
+  const config = stageConfig(name);
+  assert.deepEqual(config.plates, []);
+  assert.equal(config.colour, '#c42d26');
+  assert.ok(!page.includes('data-view="print"'));
+  assert.doesNotMatch(facts(name), /<dt>(?:Kihte|Printimise aeg|Materjal)<\/dt>/);
+  assert.doesNotMatch(page, /Prinditud \d/, 'no print date');
+  const index = readFileSync(join(out, 'index.html'), 'utf8');
+  const row = index.slice(index.indexOf('star-egg/'), index.indexOf('</li>', index.indexOf('star-egg/')));
+  assert.match(row, /<span class="fact row__fact">Kavand, veel printimata<\/span>/);
+  for (const source of ['star-egg/star-egg.scad', 'soma-egg/soma-egg.scad']) {
+    assert.ok(page.includes(`href="https://github.com/khelias/khe-workshop/blob/main/parts/${source}"`), `the page links ${source}`);
+  }
+});
+
+test('the plate view lays out the copies plate.py prints, for each batch plate', () => {
+  const { batch, assembly } = stageConfig(join('star-egg', 'index.html'));
+  assert.deepEqual(batch.map((plate) => plate.title), ['Alused', 'Korgid']);
+  for (const [index, id] of ['bases', 'caps'].entries()) {
+    const layout = JSON.parse(execFileSync('python3', [join(root, 'scripts', 'plate.py'), 'star-egg', id, '--json'], { encoding: 'utf8' }));
+    assert.deepEqual(batch[index].positions, layout.positions, id);
+    assert.equal(layout.positions.length, 25, `${id} fills the bed with a 5 x 5 grid`);
+    for (const item of batch[index].items) assert.ok(assembly.items[item], `${id} names assembly item ${item}`);
+  }
+  const page = readFileSync(join(out, 'en', 'star-egg', 'index.html'), 'utf8');
+  assert.match(page, /data-view="plate"[^>]*>Plate</);
+  assert.equal(stageConfig(join('en', 'star-egg', 'index.html')).text.slider.plate, 'Eggs on the plate');
 });

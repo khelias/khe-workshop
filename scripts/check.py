@@ -90,14 +90,16 @@ def check_exports(part: dict, tmp: Path, pool: ThreadPoolExecutor, failures: lis
             failures.append(f"{export['id']}: {mesh.nonmanifold_edges} open or non-manifold edges, {allowed} allowed")
         if max(mesh.size) > ws.BED_MM:
             failures.append(f"{export['id']}: {max(mesh.size)} mm does not fit the {ws.BED_MM:.0f} mm bed")
-        starts = air_starts(out)
+        # A colour region prints inside its object, so it is checked there, on the object's bed.
+        starts = [] if "object" in export else air_starts(out)
         if starts:
             low = min(starts, key=lambda point: point[2])
             failures.append(f"{export['id']}: {len(starts)} place(s) start printing in the air, the lowest at "
                             f"x {low[0]:.1f}, y {low[1]:.1f}, z {low[2]:.1f} mm")
-        results.append({"id": export["id"], "file": export["file"], "triangles": mesh.triangles,
-                        "size_mm": list(mesh.size), "volume_cm3": mesh.volume_cm3,
-                        "nonmanifold_edges": mesh.nonmanifold_edges, "sha256": ws.sha256(out)})
+        if not export.get("check_only"):
+            results.append({"id": export["id"], "file": export["file"], "triangles": mesh.triangles,
+                            "size_mm": list(mesh.size), "volume_cm3": mesh.volume_cm3,
+                            "nonmanifold_edges": mesh.nonmanifold_edges, "sha256": ws.sha256(out)})
     return results
 
 
@@ -125,13 +127,16 @@ def check_assembly(part: dict, tmp: Path, pool: ThreadPoolExecutor, failures: li
     return results
 
 
-def probe_outcome(probe: dict, done: ws.Render) -> tuple[bool, float | None]:
+def probe_outcome(probe: dict, done: ws.Render, out: Path) -> tuple[bool, float | None]:
     if done.problems:
         return False, None
     if probe["expect"] == "value":
         echo = re.search(rf"ECHO: {re.escape(probe['log_key'])} = ([-+\d.e]+)", done.log)
         value = float(echo.group(1)) if echo else None
         return value is not None and value >= probe["min"], value
+    if probe["expect"] == "clear" and "max_mm3" in probe and not done.empty:
+        # Regions cut from one solid touch, and their faces in common leave sheets that enclose nothing.
+        return out.exists() and ws.read_mesh(out).volume_mm3 <= probe["max_mm3"], None
     return done.empty == {"clear": True, "contact": False}[probe["expect"]], None
 
 
@@ -140,15 +145,15 @@ def check_probes(part: dict, tmp: Path, pool: ThreadPoolExecutor, failures: list
     if not probes:
         return []
     source = part["_dir"] / part["source"]
-    jobs = [(variant, [(probe, pool.submit(ws.render, source, tmp / f"{part['id']}-{variant['id']}-{probe['id']}.stl",
-                                           {**variant["defines"], **probe["defines"]}))
-                       for probe in probes["checks"]])
+    jobs = [(variant, [(probe, out, pool.submit(ws.render, source, out, {**variant["defines"], **probe["defines"]}))
+                       for probe in probes["checks"]
+                       for out in [tmp / f"{part['id']}-{variant['id']}-{probe['id']}.stl"]])
             for variant in probes["variants"]]
     results = []
     for variant, variant_jobs in jobs:
         checks = []
-        for probe, job in variant_jobs:
-            passed, value = probe_outcome(probe, job.result())
+        for probe, out, job in variant_jobs:
+            passed, value = probe_outcome(probe, job.result(), out)
             if not passed:
                 failures.append(f"{variant['id']}: probe {probe['id']} failed" + (f" ({value})" if value is not None else ""))
             checks.append({"id": probe["id"], "label": probe["label"], "passed": passed, "value": value})
@@ -265,13 +270,16 @@ def main() -> int:
         if part["id"] != part["_dir"].name:
             failures.append(f"part.json id {part['id']} does not match its folder")
         plate_problems = ws.plate_problems(part)
-        failures.extend(plate_problems)
+        failures.extend(plate_problems + ws.export_problems(part) + ws.draft_problems(part) + ws.batch_problems(part))
         with tempfile.TemporaryDirectory() as folder, ThreadPoolExecutor(os.cpu_count() or 4) as pool:
             tmp = Path(folder)
             result = {"id": part["id"], "openscad": version, "exports": check_exports(part, tmp, pool, failures),
                       "probes": check_probes(part, tmp, pool, failures)}
             if "assembly" in part:
                 result["assembly"] = check_assembly(part, tmp, pool, failures)
+            if part.get("batch") and not failures:
+                for plate in part["batch"]:
+                    failures.extend(ws.layout_problems(ws.plate_layout(part, plate, lambda name: render_path(tmp, part, name))))
             results_file = ws.CHECK_RESULTS / f"{part['id']}.json"
             results_file.unlink(missing_ok=True)
             if not failures:

@@ -19,6 +19,9 @@ This repo's own decisions: [docs/adr/](docs/adr/).
   0.001 mm (a few small patches may be triangulated differently) and `check.json`
   without its hashes and triangle counts, numbers within 0.001.
 - `python3 scripts/build.py` - writes `published/` for parts marked published.
+- `python3 scripts/plate.py <id> <plate> [--json]` - where each copy of a `batch` plate
+  stands on the bed, from the published files; `--json` is the layout khe-meta's
+  `k2_slice.py --parts --layout` slices.
 - `python3 scripts/replay.py <gcode> --part <id> [--plate <plate>]` - turns printed
   G-code into `build/replay/<id>.bin.gz`, or `<id>-<plate>.bin.gz` for one plate of a
   part with `plates` (required there, refused without), within 1.5 MB, from the
@@ -45,7 +48,10 @@ The scripts in `scripts/` use the Python standard library and OpenSCAD only; a p
 ## Layout
 
 - `parts/<id>/part.json` - titles, story, licence, credit, exports, probes, proof
-- `parts/<id>/<id>.scad` - the public source
+- `parts/<id>/<id>.scad` - the public source; it may `include` another part's source,
+  whose mode dispatch then sits behind `if (!library)` with the including part setting
+  `library` (ADR-001 point 2). The source hash in `build.json` covers every included or used
+  file, fonts too, and the page links each OpenSCAD file.
 - `parts/<id>/data/` - a part's prepared data and the script that makes it, committed
   (ADR-003); downloads go to `build/`
 - `parts/<id>/published/` - generated, only for a published part
@@ -75,7 +81,16 @@ It must print 0. A failure message never repeats a term.
 
 A probe is a render whose result is declared in `part.json`: `clear` (nothing
 collides), `contact` (something does) or `value` (an `echo` of `log_key` is at
-least `min`). A part with non-manifold edges declares how many and why.
+least `min`). A `clear` probe with `max_mm3` also passes when the render encloses at
+most that volume: regions cut from one solid touch, and their faces in common leave
+sheets that enclose nothing. A part with non-manifold edges declares how many and why.
+
+A part printed in several colours at once exports each colour region apart. Such an
+export names `"object": "<export id>"`, the export of the whole half it prints in: the
+check skips its air-start check and runs that on the object, with the object's own
+bed. An export with `"check_only": true` is rendered and checked but neither
+published nor offered as a download, as the objects are. `clear` probes prove the
+regions do not overlap and fill the object exactly.
 
 A replay covers `replay.first_layer` (default 1) to `last_layer`, so layers that
 held family text are left out at either end; `before_label` and `after_label` name
@@ -101,6 +116,19 @@ the slider's `start` (0 to 1) and `items`, each an export by id or its own `defi
 print), a display `colour` and an optional `path` of `[t, dx, dy, dz]` rows, t
 rising from 0 to 1, linear between rows. The room then adds a fourth view, Parts,
 where one slider moves every item along its path (ADR-001).
+
+A part may also list `batch` plates for the room's fifth view, Plate: each an `id`, a
+`title` in et and en, the assembly `items` one copy is made of, a `pitch` in mm and,
+once sliced, `sliced: {seconds, changes}`, copied by hand from the sliced file
+(ADR-001 point 3). `plate_layout` in `workshop.py` is the one layout, a centred grid
+at the pitch with as many copies as fit on the bed with their brims, which the check
+keeps inside the bed and apart, and which the room and `plate.py` both use.
+
+A part not printed yet may be published as a draft
+([ADR-002](docs/adr/002-the-print-and-its-use-are-the-proof.md) point 3):
+`"draft": true` beside `published: true`, no `proof` or replay, and a `stage_colour`
+for its model. Its page has no Print view and carries the draft label; it leaves
+draft when the proof and replay are added and `draft` and `stage_colour` removed.
 
 To publish a part: run the check, set `published: true` and fill `proof`
 (`printed` as `YYYY-MM-DD`, `use` in et and en, an optional `photo`;

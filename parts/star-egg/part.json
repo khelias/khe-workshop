@@ -1,0 +1,919 @@
+{
+  "id": "star-egg",
+  "title": {
+    "et": "Kaheksakandi muna",
+    "en": "Star egg"
+  },
+  "summary": {
+    "et": "Väike Soma muna kaheksakandidega: kork läheb kinni ainult siis, kui seitse tükki on sees kuubikuks kokku pandud.",
+    "en": "A small Soma egg with eight-pointed stars: the cap closes only when the seven pieces inside are packed into a cube."
+  },
+  "story": {
+    "et": "Kaheksakand on Eesti kinnaste ja kirivööde täht. Siin on see muna kestal, ja munas on Soma kuubik nagu suuremas Soma munas.",
+    "en": "The kaheksakand is the eight-pointed star of Estonian mittens and woven belts. Here it is on the shell, and inside is a Soma cube, as in the larger Soma egg."
+  },
+  "licence": "CC-BY-NC-4.0",
+  "credit": null,
+  "source": "star-egg.scad",
+  "published": true,
+  "draft": true,
+  "stage_colour": "#c42d26",
+  "exports": [
+    {
+      "id": "egg",
+      "file": "star-egg.stl",
+      "defines": {
+        "mode": "egg",
+        "steps": 32
+      },
+      "title": {
+        "et": "Muna koos korgiga",
+        "en": "Egg with its cap"
+      }
+    },
+    {
+      "id": "base",
+      "file": "star-egg-base.stl",
+      "defines": {
+        "mode": "base",
+        "steps": 32
+      },
+      "title": {
+        "et": "Alus, punane osa",
+        "en": "Base, red part"
+      },
+      "object": "base-object"
+    },
+    {
+      "id": "base-stars",
+      "file": "star-egg-base-stars.stl",
+      "defines": {
+        "mode": "base_stars",
+        "steps": 32
+      },
+      "title": {
+        "et": "Alus, valged tähed",
+        "en": "Base, white stars"
+      },
+      "object": "base-object"
+    },
+    {
+      "id": "base-mark",
+      "file": "star-egg-base-mark.stl",
+      "defines": {
+        "mode": "base_mark",
+        "steps": 32
+      },
+      "title": {
+        "et": "Alus, valge märk",
+        "en": "Base, white mark"
+      },
+      "object": "base-object"
+    },
+    {
+      "id": "base-mark-accent",
+      "file": "star-egg-base-mark-accent.stl",
+      "defines": {
+        "mode": "base_mark_accent",
+        "steps": 32
+      },
+      "title": {
+        "et": "Alus, märgi punane .ee",
+        "en": "Base, the mark's red .ee"
+      },
+      "object": "base-object"
+    },
+    {
+      "id": "base-band-0",
+      "file": "star-egg-base-band-0.stl",
+      "defines": {
+        "mode": "base_band",
+        "band": 0,
+        "steps": 32
+      },
+      "title": {
+        "et": "Alus, roheline jalg",
+        "en": "Base, green foot"
+      },
+      "object": "base-object"
+    },
+    {
+      "id": "base-band-1",
+      "file": "star-egg-base-band-1.stl",
+      "defines": {
+        "mode": "base_band",
+        "band": 1,
+        "steps": 32
+      },
+      "title": {
+        "et": "Alus, alumine kollane triip",
+        "en": "Base, lower yellow stripe"
+      },
+      "object": "base-object"
+    },
+    {
+      "id": "base-band-2",
+      "file": "star-egg-base-band-2.stl",
+      "defines": {
+        "mode": "base_band",
+        "band": 2,
+        "steps": 32
+      },
+      "title": {
+        "et": "Alus, roheline triip",
+        "en": "Base, green stripe"
+      },
+      "object": "base-object"
+    },
+    {
+      "id": "base-band-3",
+      "file": "star-egg-base-band-3.stl",
+      "defines": {
+        "mode": "base_band",
+        "band": 3,
+        "steps": 32
+      },
+      "title": {
+        "et": "Alus, ülemine kollane triip",
+        "en": "Base, upper yellow stripe"
+      },
+      "object": "base-object"
+    },
+    {
+      "id": "cap",
+      "file": "star-egg-cap.stl",
+      "defines": {
+        "mode": "cap",
+        "steps": 32
+      },
+      "title": {
+        "et": "Kork, punane osa",
+        "en": "Cap, red part"
+      },
+      "object": "cap-object"
+    },
+    {
+      "id": "cap-stars",
+      "file": "star-egg-cap-stars.stl",
+      "defines": {
+        "mode": "cap_stars",
+        "steps": 32
+      },
+      "title": {
+        "et": "Kork, valged tähed",
+        "en": "Cap, white stars"
+      },
+      "object": "cap-object"
+    },
+    {
+      "id": "cap-band-0",
+      "file": "star-egg-cap-band-0.stl",
+      "defines": {
+        "mode": "cap_band",
+        "band": 0,
+        "steps": 32
+      },
+      "title": {
+        "et": "Kork, kollane triip",
+        "en": "Cap, yellow stripe"
+      },
+      "object": "cap-object"
+    },
+    {
+      "id": "cap-band-1",
+      "file": "star-egg-cap-band-1.stl",
+      "defines": {
+        "mode": "cap_band",
+        "band": 1,
+        "steps": 32
+      },
+      "title": {
+        "et": "Kork, alumine roheline triip",
+        "en": "Cap, lower green stripe"
+      },
+      "object": "cap-object"
+    },
+    {
+      "id": "cap-band-2",
+      "file": "star-egg-cap-band-2.stl",
+      "defines": {
+        "mode": "cap_band",
+        "band": 2,
+        "steps": 32
+      },
+      "title": {
+        "et": "Kork, ülemine roheline triip",
+        "en": "Cap, upper green stripe"
+      },
+      "object": "cap-object"
+    },
+    {
+      "id": "cap-band-3",
+      "file": "star-egg-cap-band-3.stl",
+      "defines": {
+        "mode": "cap_band",
+        "band": 3,
+        "steps": 32
+      },
+      "title": {
+        "et": "Kork, roheline tipp",
+        "en": "Cap, green tip"
+      },
+      "object": "cap-object"
+    },
+    {
+      "id": "base-object",
+      "file": "star-egg-base-object.stl",
+      "defines": {
+        "mode": "base_object",
+        "steps": 32
+      },
+      "title": {
+        "et": "Alus tervikuna",
+        "en": "The whole base"
+      },
+      "check_only": true
+    },
+    {
+      "id": "cap-object",
+      "file": "star-egg-cap-object.stl",
+      "defines": {
+        "mode": "cap_object",
+        "steps": 32
+      },
+      "title": {
+        "et": "Kork tervikuna",
+        "en": "The whole cap"
+      },
+      "check_only": true
+    },
+    {
+      "id": "pieces",
+      "file": "star-egg-pieces.stl",
+      "defines": {
+        "mode": "pieces"
+      },
+      "title": {
+        "et": "Seitse tükki",
+        "en": "Seven pieces"
+      }
+    },
+    {
+      "id": "test-base",
+      "file": "star-egg-test-base.stl",
+      "defines": {
+        "mode": "test_base"
+      },
+      "test": true,
+      "title": {
+        "et": "Alusrõngas",
+        "en": "Base ring"
+      }
+    },
+    {
+      "id": "test-cap",
+      "file": "star-egg-test-cap.stl",
+      "defines": {
+        "mode": "test_cap"
+      },
+      "test": true,
+      "title": {
+        "et": "Korgirõngas",
+        "en": "Cap ring"
+      }
+    },
+    {
+      "id": "test-piece",
+      "file": "star-egg-test-piece.stl",
+      "defines": {
+        "mode": "test_piece"
+      },
+      "test": true,
+      "title": {
+        "et": "Üks tükk",
+        "en": "One piece"
+      }
+    }
+  ],
+  "stage_export": "egg",
+  "allowed_nonmanifold_edges": 0,
+  "assembly": {
+    "label": {
+      "et": "Osad",
+      "en": "Parts"
+    },
+    "start": 0.3,
+    "items": [
+      {
+        "id": "base",
+        "export": "base",
+        "colour": "#c42d26"
+      },
+      {
+        "id": "base-stars",
+        "export": "base-stars",
+        "colour": "#f2efe8"
+      },
+      {
+        "id": "base-mark",
+        "export": "base-mark",
+        "colour": "#f2efe8"
+      },
+      {
+        "id": "base-mark-accent",
+        "export": "base-mark-accent",
+        "colour": "#c42d26"
+      },
+      {
+        "id": "base-band-0",
+        "export": "base-band-0",
+        "colour": "#2f8f4e"
+      },
+      {
+        "id": "base-band-1",
+        "export": "base-band-1",
+        "colour": "#f2b81f"
+      },
+      {
+        "id": "base-band-2",
+        "export": "base-band-2",
+        "colour": "#2f8f4e"
+      },
+      {
+        "id": "base-band-3",
+        "export": "base-band-3",
+        "colour": "#f2b81f"
+      },
+      {
+        "id": "cap",
+        "export": "cap",
+        "colour": "#c42d26",
+        "path": [
+          [
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0.3,
+            0,
+            0,
+            52
+          ],
+          [
+            1,
+            0,
+            0,
+            52
+          ]
+        ]
+      },
+      {
+        "id": "cap-stars",
+        "export": "cap-stars",
+        "colour": "#f2efe8",
+        "path": [
+          [
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0.3,
+            0,
+            0,
+            52
+          ],
+          [
+            1,
+            0,
+            0,
+            52
+          ]
+        ]
+      },
+      {
+        "id": "cap-band-0",
+        "export": "cap-band-0",
+        "colour": "#f2b81f",
+        "path": [
+          [
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0.3,
+            0,
+            0,
+            52
+          ],
+          [
+            1,
+            0,
+            0,
+            52
+          ]
+        ]
+      },
+      {
+        "id": "cap-band-1",
+        "export": "cap-band-1",
+        "colour": "#2f8f4e",
+        "path": [
+          [
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0.3,
+            0,
+            0,
+            52
+          ],
+          [
+            1,
+            0,
+            0,
+            52
+          ]
+        ]
+      },
+      {
+        "id": "cap-band-2",
+        "export": "cap-band-2",
+        "colour": "#2f8f4e",
+        "path": [
+          [
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0.3,
+            0,
+            0,
+            52
+          ],
+          [
+            1,
+            0,
+            0,
+            52
+          ]
+        ]
+      },
+      {
+        "id": "cap-band-3",
+        "export": "cap-band-3",
+        "colour": "#2f8f4e",
+        "path": [
+          [
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0.3,
+            0,
+            0,
+            52
+          ],
+          [
+            1,
+            0,
+            0,
+            52
+          ]
+        ]
+      },
+      {
+        "id": "piece-v",
+        "defines": {
+          "mode": "solved_piece",
+          "piece": 0
+        },
+        "colour": "#c42d26",
+        "path": [
+          [
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0.3,
+            0,
+            0,
+            0
+          ],
+          [
+            0.6,
+            0,
+            0,
+            31.5
+          ],
+          [
+            1,
+            -9.3,
+            -18.7,
+            38.5
+          ]
+        ]
+      },
+      {
+        "id": "piece-l",
+        "defines": {
+          "mode": "solved_piece",
+          "piece": 1
+        },
+        "colour": "#f2efe8",
+        "path": [
+          [
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0.3,
+            0,
+            0,
+            0
+          ],
+          [
+            0.6,
+            0,
+            0,
+            31.5
+          ],
+          [
+            1,
+            -28.0,
+            21.0,
+            33.2
+          ]
+        ]
+      },
+      {
+        "id": "piece-t",
+        "defines": {
+          "mode": "solved_piece",
+          "piece": 2
+        },
+        "colour": "#f2b81f",
+        "path": [
+          [
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0.3,
+            0,
+            0,
+            0
+          ],
+          [
+            0.6,
+            0,
+            0,
+            31.5
+          ],
+          [
+            1,
+            21.0,
+            -28.0,
+            31.5
+          ]
+        ]
+      },
+      {
+        "id": "piece-z",
+        "defines": {
+          "mode": "solved_piece",
+          "piece": 3
+        },
+        "colour": "#2f8f4e",
+        "path": [
+          [
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0.3,
+            0,
+            0,
+            0
+          ],
+          [
+            0.6,
+            0,
+            0,
+            31.5
+          ],
+          [
+            1,
+            0.0,
+            -14.0,
+            24.5
+          ]
+        ]
+      },
+      {
+        "id": "piece-a",
+        "defines": {
+          "mode": "solved_piece",
+          "piece": 4
+        },
+        "colour": "#c42d26",
+        "path": [
+          [
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0.3,
+            0,
+            0,
+            0
+          ],
+          [
+            0.6,
+            0,
+            0,
+            31.5
+          ],
+          [
+            1,
+            14.0,
+            21.0,
+            36.8
+          ]
+        ]
+      },
+      {
+        "id": "piece-b",
+        "defines": {
+          "mode": "solved_piece",
+          "piece": 5
+        },
+        "colour": "#f2efe8",
+        "path": [
+          [
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0.3,
+            0,
+            0,
+            0
+          ],
+          [
+            0.6,
+            0,
+            0,
+            31.5
+          ],
+          [
+            1,
+            21.0,
+            21.0,
+            28.0
+          ]
+        ]
+      },
+      {
+        "id": "piece-p",
+        "defines": {
+          "mode": "solved_piece",
+          "piece": 6
+        },
+        "colour": "#2f8f4e",
+        "path": [
+          [
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0.3,
+            0,
+            0,
+            0
+          ],
+          [
+            0.6,
+            0,
+            0,
+            31.5
+          ],
+          [
+            1,
+            -21.0,
+            -7.0,
+            29.7
+          ]
+        ]
+      }
+    ]
+  },
+  "probes": {
+    "variant_heading": {
+      "et": "Tükid",
+      "en": "Pieces"
+    },
+    "value_heading": {
+      "et": "Küljevahe",
+      "en": "Side gap"
+    },
+    "each": {
+      "et": "Kontrolliti:",
+      "en": "Checked:"
+    },
+    "variants": [
+      {
+        "id": "cube-6",
+        "label": {
+          "et": "Kuubiku serv 6 mm",
+          "en": "6 mm cubes"
+        },
+        "defines": {}
+      }
+    ],
+    "checks": [
+      {
+        "id": "closed",
+        "label": {
+          "et": "Kokkupandud kuubik mahub munasse ja kork läheb peale",
+          "en": "The packed cube fits and the cap goes on"
+        },
+        "defines": {
+          "mode": "closed"
+        },
+        "expect": "clear"
+      },
+      {
+        "id": "raised",
+        "label": {
+          "et": "1,5 mm kõrgemale jäänud tükk ei lase korki peale",
+          "en": "A piece standing 1.5 mm high stops the cap"
+        },
+        "defines": {
+          "mode": "raised",
+          "lift": 1.5
+        },
+        "expect": "contact"
+      },
+      {
+        "id": "thread",
+        "label": {
+          "et": "Keermel on vahet, kork ei hõõrdu alusesse",
+          "en": "The thread has play, the cap does not rub the base"
+        },
+        "defines": {
+          "mode": "thread"
+        },
+        "expect": "clear"
+      },
+      {
+        "id": "side-gap",
+        "label": {
+          "et": "Kuubiku ja süvendi seina vahel on vähemalt 0,3 mm",
+          "en": "At least 0.3 mm between the cube and the pocket wall"
+        },
+        "defines": {
+          "mode": "walls"
+        },
+        "expect": "value",
+        "log_key": "side_gap",
+        "min": 0.3
+      },
+      {
+        "id": "corner-wall",
+        "label": {
+          "et": "Süvendi nurga ja keerme vahel on vähemalt 1,5 mm seina",
+          "en": "At least 1.5 mm of wall between the pocket corner and the thread"
+        },
+        "defines": {
+          "mode": "walls"
+        },
+        "expect": "value",
+        "log_key": "corner_wall",
+        "min": 1.5
+      },
+      {
+        "id": "bore-wall",
+        "label": {
+          "et": "Korgi sein on keerme kohal vähemalt 1,5 mm paks",
+          "en": "The cap wall over the thread is at least 1.5 mm thick"
+        },
+        "defines": {
+          "mode": "walls"
+        },
+        "expect": "value",
+        "log_key": "bore_wall",
+        "min": 1.5
+      },
+      {
+        "id": "overlap",
+        "label": {
+          "et": "Värvilised osad ei kattu",
+          "en": "No two colour parts overlap"
+        },
+        "defines": {
+          "mode": "overlap",
+          "steps": 32
+        },
+        "expect": "clear",
+        "max_mm3": 0.001
+      },
+      {
+        "id": "union-minus-parts",
+        "label": {
+          "et": "Värvilised osad täidavad kumbagi poolt tervenisti",
+          "en": "The colour parts fill each half completely"
+        },
+        "defines": {
+          "mode": "union_minus_parts",
+          "steps": 32
+        },
+        "expect": "clear",
+        "max_mm3": 0.001
+      },
+      {
+        "id": "parts-minus-union",
+        "label": {
+          "et": "Ükski värviline osa ei ulatu oma poolest välja",
+          "en": "No colour part reaches outside its half"
+        },
+        "defines": {
+          "mode": "parts_minus_union",
+          "steps": 32
+        },
+        "expect": "clear",
+        "max_mm3": 0.001
+      }
+    ]
+  },
+  "batch": [
+    {
+      "id": "bases",
+      "title": {
+        "et": "Alused",
+        "en": "Bases"
+      },
+      "items": [
+        "base",
+        "base-stars",
+        "base-mark",
+        "base-mark-accent",
+        "base-band-0",
+        "base-band-1",
+        "base-band-2",
+        "base-band-3"
+      ],
+      "pitch": 51,
+      "sliced": {
+        "seconds": 48920,
+        "changes": 55
+      }
+    },
+    {
+      "id": "caps",
+      "title": {
+        "et": "Korgid",
+        "en": "Caps"
+      },
+      "items": [
+        "cap",
+        "cap-stars",
+        "cap-band-0",
+        "cap-band-1",
+        "cap-band-2",
+        "cap-band-3"
+      ],
+      "pitch": 51,
+      "sliced": {
+        "seconds": 37874,
+        "changes": 49
+      }
+    }
+  ]
+}

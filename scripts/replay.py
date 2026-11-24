@@ -344,6 +344,8 @@ def main() -> int:
         if part is None:
             parser.error(f"no part named {args.part}")
         plates = ws.plates_or_exit(part)
+        if not plates:
+            parser.error(f"{args.part} has no replay settings yet: add replay or plates to its part.json")
         plate = next((item for item in plates if item["id"] == args.plate), None)
         if plate is None:
             ids = [item["id"] for item in plates if item["id"]]

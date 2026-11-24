@@ -1,6 +1,6 @@
 # ADR-002: The real print and its use are the proof, a photo is optional
 
-- **Status:** Accepted (2026-11-24); point 1 extended to a part printed on several plates on 2026-11-24
+- **Status:** Accepted (2026-11-24); point 1 extended to a part printed on several plates on 2026-11-24; point 3, the draft, added on 2026-11-24 for the star egg
 - **Supersedes:** point 1 of [ADR-001](001-published-parts-carry-their-proof.md)
 - **Related:** [estate ADR-043](https://github.com/khelias/khe-architecture/blob/main/decisions/043-household-parts-are-public-source-built-into-khe-sites.md)
 
@@ -23,6 +23,13 @@ printer really ran. That shows the print layer by layer, which a photo does not.
    plate, and the page plays them one after another as one print.
 2. **A photo is optional.** When `proof.photo` is set, the file must exist in
    `published/` and the page shows it; without one, the page is complete.
+3. **A part may be published as a draft before it is printed.** `"draft": true`
+   beside `published: true` publishes it without `proof` or a replay, so the
+   family can see it in the room before spending a print on it. Its page has the
+   model, cut, parts and plate views but no print view, and shows "Draft, not
+   printed yet" beside its title and on its index row. It leaves draft when its
+   proof and replay are added and `draft` is removed; the check refuses a draft
+   that already has them.
 
 ## Alternatives considered
 
@@ -32,5 +39,6 @@ printer really ran. That shows the print layer by layer, which a photo does not.
 
 ## Consequences
 
-- A part can go live as soon as it has been printed, used and replayed.
+- A part can go live as soon as it has been printed, used and replayed, or
+  earlier as a labelled draft.
 - The claim that a part is in use rests on the recorded sentence, not a picture.

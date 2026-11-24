@@ -119,7 +119,7 @@ class Stage {
     this.timeline = root.querySelector('.stage__timeline');
     this.tabs = [...root.querySelectorAll('[data-view]')];
     this.view = 'model';
-    this.values = { model: 0, cut: SLIDER_MAX / 2, print: SLIDER_MAX * 0.55, parts: (this.config.assembly?.start ?? 0) * SLIDER_MAX };
+    this.values = { model: 0, cut: SLIDER_MAX / 2, print: SLIDER_MAX * 0.55, parts: (this.config.assembly?.start ?? 0) * SLIDER_MAX, plate: SLIDER_MAX };
     this.loads = {};
     this.visible = true;
     this.frame = 0;
@@ -135,7 +135,8 @@ class Stage {
     this.buildScene(parseStl(await loadBytes(this.config.stl)));
     this.bindControls();
     this.root.dataset.ready = 'true';
-    const initial = this.config.initial === 'print' || this.config.initial === 'cut' ? this.config.initial : 'model';
+    const { initial: asked } = this.config;
+    const initial = asked === 'cut' || (asked === 'print' && this.plates.length) ? asked : 'model';
     this.setView(initial);
     // The inlay is a detail: the stage works without it, so a failed load leaves no error.
     inlay?.then((bytes) => this.addInlay(parseStl(bytes))).catch(() => {});
@@ -179,7 +180,8 @@ class Stage {
     scene.add(new THREE.HemisphereLight('#ffffff', '#b8a990', 0.5));
     // One key light from the camera's left and above, its shadow falling behind the part.
     const key = new THREE.DirectionalLight('#fff4e8', 2);
-    const extent = this.config.bed;
+    // The plate view stands its beds in a row, so the shadows and the ground reach past one bed.
+    const extent = this.config.bed * (this.config.batch ? this.config.batch.length + 0.2 : 1);
     key.position.set(-50, 420, 240);
     key.castShadow = true;
     key.shadow.mapSize.setScalar(this.lite ? 1024 : 2048);
@@ -215,7 +217,8 @@ class Stage {
     this.shift = placed.shift;
     this.clip = new THREE.Plane(new THREE.Vector3(-1, 0, 0), 0);
     this.clipped = [this.clip];
-    const colour = (this.stagePlate ?? this.plates[0]).colour;
+    // A draft, not printed yet, has no plate to take the colour from.
+    const colour = (this.stagePlate ?? this.plates[0])?.colour ?? this.config.colour;
     const bodyGeometry = geometryOf(placed.body);
     this.materials = [solidMaterial(isDark(hexToRgb(colour)) ? '#676e74' : colour)];
     this.body = solidMesh(bodyGeometry, this.materials[0]);
@@ -356,19 +359,19 @@ class Stage {
     this.play.hidden = true;
     this.showStatus('');
     const reframe = () => {
-      const frame = { print: this.printFrame, parts: this.spreadFrame }[view] ?? this.partFrame;
+      const frame = { print: this.printFrame, parts: this.spreadFrame, plate: this.batchFrame }[view] ?? this.partFrame;
       if (this.framing === frame) return;
       this.frameOn(frame);
       this.aim(...this.firstAim());
     };
-    if (view !== 'parts') reframe();
+    if (view !== 'parts' && view !== 'plate') reframe();
     if (view === 'cut') this.aim(1.15, this.size[2] < 80 ? 0.55 : 0.2);
-    // The print and parts views load their data when first opened.
-    const loader = { print: !this.printPlates && 'loadPaths', parts: !this.items && 'loadItems' }[view];
+    // The print, parts and plate views load their data when first opened.
+    const loader = { print: !this.printPlates && 'loadPaths', parts: !this.items && 'loadItems', plate: !this.batch && 'loadBatch' }[view];
     if (loader) {
       this.configureView();
       this.invalidate(true);
-      this.showStatus(view === 'parts' ? this.text.loading_parts : this.text.loading);
+      this.showStatus(view === 'print' ? this.text.loading : this.text.loading_parts);
       this.loads[loader] ??= this[loader]();
       try {
         await this.loads[loader];
@@ -380,7 +383,7 @@ class Stage {
       if (this.view !== view) return;
       this.showStatus('');
     }
-    if (view === 'parts' || view === 'print') reframe();
+    if (view === 'parts' || view === 'print' || view === 'plate') reframe();
     this.play.hidden = view !== 'print' || this.still;
     this.configureView();
     this.apply();
@@ -486,19 +489,36 @@ class Stage {
     });
   }
 
+  // The assembly's items as printed, each with one geometry the parts and plate views share.
+  itemMeshes() {
+    this.loads.meshes ??= Promise.all(this.config.assembly.items.map(async (item) => {
+      const mesh = parseStl(await loadBytes(item.stl));
+      return { ...bounds(mesh.positions), geometry: geometryOf(mesh) };
+    })).catch((error) => {
+      this.loads.meshes = null;
+      throw error;
+    });
+    return this.loads.meshes;
+  }
+
+  itemMaterial(colour) {
+    this.itemMaterials ??= new Map();
+    if (!this.itemMaterials.has(colour)) this.itemMaterials.set(colour, solidMaterial(colour));
+    return this.itemMaterials.get(colour);
+  }
+
   async loadItems() {
     const { items } = this.config.assembly;
-    const meshes = await Promise.all(items.map(async (item) => parseStl(await loadBytes(item.stl))));
-    const materials = new Map();
+    const meshes = await this.itemMeshes();
+    // The items keep their print coordinates; the group moves them by the stage mesh's shift.
     const group = new THREE.Group();
-    const spread = meshes.map((mesh, index) => {
-      moveBy(mesh, this.shift);
+    group.position.set(...this.shift.map((value) => -value));
+    const spread = meshes.map(({ min, max, geometry }, index) => {
       const { colour, path } = items[index];
-      if (!materials.has(colour)) materials.set(colour, solidMaterial(colour));
-      const solid = solidMesh(geometryOf(mesh), materials.get(colour));
+      const solid = solidMesh(geometry, this.itemMaterial(colour));
       solid.userData.path = path;
       group.add(solid);
-      return { ...bounds(mesh.positions), path };
+      return { min: min.map((value, axis) => value - this.shift[axis]), max: max.map((value, axis) => value - this.shift[axis]), path };
     });
     // Print coordinates are Z up, the scene Y up with print Y pointing away.
     const { min, max } = reach(spread);
@@ -509,20 +529,60 @@ class Stage {
     this.turntable.add(group);
   }
 
+  // Each batch plate on a bed of its own in one row, its copies drawn as instances of the items,
+  // each copy's floor on the bed and its centre on its position.
+  async loadBatch() {
+    const meshes = await this.itemMeshes();
+    const { items } = this.config.assembly;
+    const bed = this.config.bed;
+    const row = rowLayout(this.config.batch.map(() => [bed, bed]), PAD_GAP);
+    const pads = new THREE.Group();
+    const copies = new THREE.Group();
+    let height = 0;
+    const place = new THREE.Matrix4();
+    this.batch = this.config.batch.map((plate, index) => {
+      const { min: low, max: high } = reach(plate.items.map((item) => meshes[item]));
+      height = Math.max(height, high[2] - low[2]);
+      const offset = row.offsets[index];
+      pads.add(this.bedSurface(bed, offset));
+      const instances = plate.items.map((item) => {
+        const mesh = new THREE.InstancedMesh(meshes[item].geometry, this.itemMaterial(items[item].colour), plate.positions.length);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        plate.positions.forEach(([x, y], copy) => {
+          mesh.setMatrixAt(copy, place.makeTranslation(offset + x - (low[0] + high[0]) / 2, y - (low[1] + high[1]) / 2, -low[2]));
+        });
+        copies.add(mesh);
+        return mesh;
+      });
+      return { instances, count: plate.positions.length, sliced: plate.sliced };
+    });
+    this.batchCount = Math.max(...this.batch.map((plate) => plate.count));
+    const centre = new THREE.Vector3((row.low + row.high) / 2, height / 2, 0);
+    const points = row.offsets.flatMap((offset) => corners([offset - centre.x - bed / 2, -centre.y, -bed / 2], [offset - centre.x + bed / 2, height - centre.y, bed / 2]));
+    this.batchFrame = { centre, radius: Math.max(...points.map((point) => Math.hypot(...point))), points };
+    this.batchPads = pads;
+    this.batchCopies = copies;
+    pads.visible = copies.visible = this.view === 'plate';
+    this.scene.add(pads);
+    this.turntable.add(copies);
+  }
+
   // What depends on the view only, set once when the view opens.
   configureView() {
     const isCut = this.view === 'cut';
     const isPrint = this.view === 'print';
     const isParts = this.view === 'parts';
+    const isPlate = this.view === 'plate';
     this.materials.forEach((material) => { material.clippingPlanes = isCut ? this.clipped : NO_CLIP; });
     this.cutMasks.visible = isCut;
     this.cap.visible = isCut;
-    this.body.visible = !isPrint && !isParts;
+    this.body.visible = !isPrint && !isParts && !isPlate;
     if (this.base) this.base.visible = isPrint;
     if (this.ghost) this.ghost.visible = isPrint;
     this.head.visible = false;
-    if (this.top) this.top.visible = !isPrint && !isParts;
-    if (this.inlay) this.inlay.visible = !isParts;
+    if (this.top) this.top.visible = !isPrint && !isParts && !isPlate;
+    if (this.inlay) this.inlay.visible = !isParts && !isPlate;
     if (this.items) this.items.visible = isParts;
     if (!isPrint) this.stageGroup.visible = true;
     for (const plate of this.printPlates ?? []) {
@@ -531,10 +591,9 @@ class Stage {
       if (plate.walls) plate.walls.visible = isPrint;
     }
     for (const mark of this.marks ?? []) mark.hidden = !isPrint;
-    if (this.pads) {
-      this.pads.visible = isPrint;
-      this.bed.visible = !isPrint;
-    }
+    if (this.pads) this.pads.visible = isPrint;
+    if (this.batchPads) this.batchPads.visible = this.batchCopies.visible = isPlate;
+    this.bed.visible = !isPlate && !(isPrint && this.pads);
     if (this.view !== 'model') this.turntable.rotation.z = 0;
   }
 
@@ -547,6 +606,8 @@ class Stage {
       this.applyCut(value);
     } else if (this.view === 'parts') {
       if (this.items) this.applyParts(value);
+    } else if (this.view === 'plate') {
+      if (this.batch) this.applyPlate(value);
     } else if (this.printPlates) {
       this.applyPrint(value);
     }
@@ -566,6 +627,22 @@ class Stage {
     const t = value / SLIDER_MAX;
     this.items.children.forEach((solid) => solid.position.set(...pathAt(solid.userData.path, t)));
     this.setReadout(this.text.apart.replace('{pct}', Math.round(t * 100)));
+  }
+
+  // From one copy on each plate to full plates; a plate's sliced time and changes are for it full.
+  applyPlate(value) {
+    const count = 1 + Math.round((value / SLIDER_MAX) * (this.batchCount - 1));
+    let halves = 0;
+    for (const plate of this.batch) {
+      const shown = Math.min(count, plate.count);
+      for (const mesh of plate.instances) mesh.count = shown;
+      halves += shown;
+    }
+    const full = count === this.batchCount && this.batch.every((plate) => plate.sliced);
+    const text = full ? this.text.batch_sliced
+      .replace('{time}', formatDuration(this.batch.reduce((sum, plate) => sum + plate.sliced.seconds, 0)))
+      .replace('{changes}', this.batch.reduce((sum, plate) => sum + plate.sliced.changes, 0)) : this.text.batch;
+    this.setReadout(text.replace('{n}', halves));
   }
 
   applyPrint(value) {

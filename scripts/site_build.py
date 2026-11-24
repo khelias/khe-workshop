@@ -37,7 +37,7 @@ LICENCES = {
 TEXT = {
     "et": {
         "room": "Töökoda",
-        "lead": "Detailid, mille oleme oma kodu jaoks ise kavandanud ja printinud. Igaüht saab keerata, pooleks lõigata ja vaadata, kuidas see kiht kihi haaval valmis.",
+        "lead": "Detailid, mille oleme oma kodu jaoks ise kavandanud. Igaüht saab keerata ja pooleks lõigata ning prinditud detaili puhul vaadata, kuidas see kiht kihi haaval valmis.",
         "other": "English", "back": "Kõik detailid", "views": "Vaade",
         "model": "Mudel", "cut": "Lõige", "print": "Printimine",
         "why": "Detailist", "proof": "Kontroll", "facts": "Prinditöö",
@@ -55,17 +55,20 @@ TEXT = {
         "terms": {"CC-BY-4.0": "Võid seda kasutada, muuta ja jagada, kui nimetad autori.",
                   "CC-BY-NC-4.0": "Võid seda kasutada, muuta ja jagada, kui nimetad autorid, aga mitte ärilisel eesmärgil."},
         "plate": "Plaat", "total": "Kokku", "plates_row": "{n} plaati, {time}", "tests": "Sobivusproovid",
+        "draft": "Kavand, veel printimata",
         "stage": {"play": "Esita", "pause": "Paus", "loading": "Laadin prinditööd", "loading_parts": "Laadin osi", "error": "Vaadet ei õnnestunud laadida.",
                   "turned": "Pööratud {deg}°", "cut": "Lõige {mm} mm keskjoonest",
                   "print": "{time}, kiht {layer}/{layers}",
                   "print_plates": "{time} / {total}, plaat {plate}/{plates}, kiht {layer}/{layers}",
                   "plate_mark": "Järgmine plaat", "colour_change": "Värvivahetus",
                   "apart": "Lahti võetud {pct}%",
-                  "slider": {"model": "Pööra detaili", "cut": "Liiguta lõiget", "print": "Keri prinditööd", "parts": "Võta osadeks"}},
+                  "batch": "{n} poolt", "batch_sliced": "{n} poolt, {time}, {changes} värvivahetust",
+                  "slider": {"model": "Pööra detaili", "cut": "Liiguta lõiget", "print": "Keri prinditööd", "parts": "Võta osadeks",
+                             "plate": "Mune plaadil"}},
     },
     "en": {
         "room": "Workshop",
-        "lead": "Parts we designed and printed for our own home. Turn each one, cut it open and watch how it was built, layer by layer.",
+        "lead": "Parts we designed for our own home. Turn each one, cut it open and, for a printed part, watch how it was built, layer by layer.",
         "other": "Eesti", "back": "All parts", "views": "View",
         "model": "Model", "cut": "Cut", "print": "Print",
         "why": "About the part", "proof": "Checks", "facts": "The print",
@@ -83,13 +86,16 @@ TEXT = {
         "terms": {"CC-BY-4.0": "You may use, change and share it if you credit the author.",
                   "CC-BY-NC-4.0": "You may use, change and share it if you credit the authors, but not commercially."},
         "plate": "Plate", "total": "Total", "plates_row": "{n} plates, {time}", "tests": "Fit tests",
+        "draft": "Draft, not printed yet",
         "stage": {"play": "Play", "pause": "Pause", "loading": "Loading the print", "loading_parts": "Loading the parts", "error": "The view could not be loaded.",
                   "turned": "Turned {deg}°", "cut": "Cut {mm} mm from the centre",
                   "print": "{time}, layer {layer} of {layers}",
                   "print_plates": "{time} of {total}, plate {plate}/{plates}, layer {layer}/{layers}",
                   "plate_mark": "Next plate", "colour_change": "Colour change",
                   "apart": "{pct}% apart",
-                  "slider": {"model": "Turn the part", "cut": "Move the cut", "print": "Scrub through the print", "parts": "Take the part apart"}},
+                  "batch": "{n} halves", "batch_sliced": "{n} halves, {time}, {changes} colour changes",
+                  "slider": {"model": "Turn the part", "cut": "Move the cut", "print": "Scrub through the print", "parts": "Take the part apart",
+                             "plate": "Eggs on the plate"}},
     },
 }
 
@@ -239,7 +245,7 @@ class Site:
         photo = photo_name(part)
         if photo:
             shutil.copyfile(part["_dir"] / "published" / photo, folder / photo)
-        for export in part["exports"]:
+        for export in ws.published_exports(part):
             target = folder / export["file"]
             if part.get("published"):
                 shutil.copyfile(part["_dir"] / "published" / export["file"], target)
@@ -290,16 +296,19 @@ class Site:
         for part in self.parts:
             metas = self.plate_metas(part)
             href = self.link(depth, f"{prefix}{part['id']}/")
-            if len(metas) > 1:
+            if not metas:
+                facts = t["draft"]
+            elif len(metas) > 1:
                 facts = t["plates_row"].format(n=len(metas), time=duration(totals(metas)[0]))
             else:
                 meta = metas[0][1]
                 layer_unit = t["layers_one"] if meta["total_layers"] == 1 else t["layers_many"]
                 facts = f"{meta['total_layers']} {layer_unit}, {duration(meta['print_seconds'])}"
-            shown_plate = ws.stage_plate(part) or metas[0][0]
+            shown_plate = ws.stage_plate(part) or (metas[0][0] if metas else None)
+            drawing = outline(self.replay_file(part, shown_plate)) if shown_plate else '<span class="row__outline" aria-hidden="true"></span>'
             rows.append(f"""<li class="row">
 <a class="row__link" href="{href}">
-{outline(self.replay_file(part, shown_plate))}
+{drawing}
 <span class="row__text">
 <span class="row__title">{esc(part['title'][lang])}</span>
 <span class="row__summary">{esc(part['summary'][lang])}</span>
@@ -307,7 +316,10 @@ class Site:
 <span class="fact row__fact">{esc(facts)}</span>
 </a>
 </li>""")
-        shown = self.parts[0]
+        # The hero replays a print, so it shows the first part that has one.
+        shown = next((part for part in self.parts if ws.plates(part)), None)
+        if shown is None:
+            raise SystemExit("FAIL: no part has a replay, so the index has no print to show")
         shown_href = self.link(depth, f"{prefix}{shown['id']}/")
         body = f"""<section class="band hero">
 <header class="hero__text">
@@ -370,15 +382,24 @@ class Site:
             "lang": lang, "stl": self.data_link(part, depth, files[part["stage_export"]]),
             "plates": plates, "bed": ws.BED_MM, "text": stage_text(lang, len(plates)),
         }
+        if part.get("stage_colour"):
+            config["colour"] = part["stage_colour"]
         if initial != "model":
             config["initial"] = initial
-        views = [(view, t[view]) for view in ("model", "cut", "print")]
+        views = [(view, t[view]) for view in (("model", "cut", "print") if plates else ("model", "cut"))]
         assembly = part.get("assembly")
         if assembly:
             config["assembly"] = {"start": assembly["start"], "items": [
                 {"stl": self.data_link(part, depth, ws.item_file(part, item)), "colour": item["colour"], "path": item.get("path")}
                 for item in assembly["items"]]}
             views.append(("parts", assembly["label"][lang]))
+        if part.get("batch"):
+            ids = [item["id"] for item in assembly["items"]]
+            config["batch"] = [{"title": plate["title"][lang], "items": [ids.index(name) for name in plate["items"]],
+                                "positions": ws.plate_layout(part, plate, lambda name: self.out / "data" / part["id"] / name)["positions"],
+                                **({"sliced": plate["sliced"]} if "sliced" in plate else {})}
+                               for plate in part["batch"]]
+            views.append(("plate", t["plate"]))
         tabs = "".join(f'<button type="button" class="stage__tab" data-view="{view}" aria-pressed="{str(view == initial).lower()}">{esc(label)}</button>'
                        for view, label in views)
         data = json.dumps(config, ensure_ascii=False).replace("<", "\\u003c")
@@ -476,7 +497,7 @@ class Site:
         plate_table = ""
         if len(metas) > 1:
             plate_table = self.plate_table(part, metas, lang)
-        else:
+        elif metas:
             meta = metas[0][1]
             facts += [(t["layers"], str(meta["total_layers"])), (t["time"], duration(meta["print_seconds"]))]
             if meta.get("filament_g"):
@@ -497,13 +518,20 @@ class Site:
         def file_items(exports) -> str:
             return "".join(f'<li><a href="{esc(self.data_link(part, depth, item["file"]))}" download>{esc(item["title"][lang])}</a> <span class="fact">STL</span></li>'
                            for item in exports)
-        tests = [item for item in part["exports"] if item.get("test")]
-        files = file_items(item for item in part["exports"] if not item.get("test"))
-        files += f'<li><a href="{SOURCE_URL}/{part["id"]}/{esc(part["source"])}">{t["source"]}</a></li>'
+        exports = ws.published_exports(part)
+        tests = [item for item in exports if item.get("test")]
+        files = file_items(item for item in exports if not item.get("test"))
+        sources = [path.relative_to(ws.PARTS.resolve()).as_posix() for path in ws.source_files(part)]
+        if len(sources) == 1:
+            files += f'<li><a href="{SOURCE_URL}/{esc(sources[0])}">{t["source"]}</a></li>'
+        else:
+            links = ", ".join(f'<a href="{SOURCE_URL}/{esc(source)}">{esc(posixpath.basename(source))}</a>' for source in sources)
+            files += f'<li>{t["source"]}: {links}</li>'
         files_html = f'<ul class="files">{files}</ul>'
         if tests:
             files_html += f'\n<h3>{t["tests"]}</h3>\n<ul class="files">{file_items(tests)}</ul>'
         name, url = LICENCES[part["licence"]]
+        draft = f' <span class="room__draft">{t["draft"]}</span>' if part.get("draft") else ""
         credit = part.get("credit")
         credit_html = ""
         if credit:
@@ -512,7 +540,7 @@ class Site:
         body = f"""<section class="band">
 <header class="room__head">
 <p class="label"><a href="{self.link(depth, prefix)}">{t['back']}</a></p>
-<h1>{esc(part['title'][lang])}</h1>
+<h1>{esc(part['title'][lang])}{draft}</h1>
 <p class="lead">{esc(part['summary'][lang])}</p>
 <p class="room__action"><a class="button" href="#files">{t['download']}</a></p>
 </header>

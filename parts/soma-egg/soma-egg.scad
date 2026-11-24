@@ -41,6 +41,7 @@ mode = "assembly";
 lift = 0;          // probe: raise one piece of the solved cube
 explode = 22;      // assembly view: cap above the seam
 piece = 0;         // solved_piece: which piece of the solution, 0 to 6
+library = false;   // true in a part that includes this file, so it draws nothing of its own
 
 $fn = 128;
 eps = 0.01;
@@ -183,32 +184,34 @@ module pieces_plate() {
 // The fit test keeps only the thread, the pocket and the cap's ceiling.
 test_r = r_crest + thread_gap + 2.4;
 
-// The closed egg for viewing; the thread's play is filled, so its gaps do not read as a print.
-if (mode == "egg") {
-    base();
-    cap();
-    difference() {
-        cylinder(r = r_crest + thread_gap + 0.7, h = ceil_z);
-        translate([0, 0, -1]) cylinder(r = r_core - 0.5, h = ceil_z + 2);
+if (!library) {
+    // The closed egg for viewing; the thread's play is filled, so its gaps do not read as a print.
+    if (mode == "egg") {
+        base();
+        cap();
+        difference() {
+            cylinder(r = r_crest + thread_gap + 0.7, h = ceil_z);
+            translate([0, 0, -1]) cylinder(r = r_core - 0.5, h = ceil_z + 2);
+        }
     }
-}
-else if (mode == "base") base();
-else if (mode == "cap") cap();
-else if (mode == "pieces") pieces_plate();
-else if (mode == "test_base") intersection() { base(); translate([0, 0, -2]) cylinder(r = test_r, h = spigot_h + 2); }
-else if (mode == "test_cap") intersection() { cap(); cylinder(r = test_r, h = ceil_z + 1.6); }
-else if (mode == "test_piece") piece(pieces[1][1]);
-else if (mode == "solved_piece") translate([-3 * u / 2, -3 * u / 2, pocket_floor]) piece(solution[piece][1]);
-else if (mode == "closed") intersection() { union() { base(); cap(); } solved(); }
-else if (mode == "raised") intersection() { cap(); solved(lift); }
-else if (mode == "thread") intersection() { base(); translate([0, 0, 0.05]) cap(); }
-else if (mode == "walls") {
-    echo(corner_wall = r_core - a * sqrt(2));
-    echo(bore_wall = egg_r(ceil_z) - r_crest - thread_gap);
-    echo(side_gap = a - (3 * u / 2 - g));
-}
-else {
-    base();
-    translate([0, 0, explode]) cap();
-    solved();
+    else if (mode == "base") base();
+    else if (mode == "cap") cap();
+    else if (mode == "pieces") pieces_plate();
+    else if (mode == "test_base") intersection() { base(); translate([0, 0, -2]) cylinder(r = test_r, h = spigot_h + 2); }
+    else if (mode == "test_cap") intersection() { cap(); cylinder(r = test_r, h = ceil_z + 1.6); }
+    else if (mode == "test_piece") piece(pieces[1][1]);
+    else if (mode == "solved_piece") translate([-3 * u / 2, -3 * u / 2, pocket_floor]) piece(solution[piece][1]);
+    else if (mode == "closed") intersection() { union() { base(); cap(); } solved(); }
+    else if (mode == "raised") intersection() { cap(); solved(lift); }
+    else if (mode == "thread") intersection() { base(); translate([0, 0, 0.05]) cap(); }
+    else if (mode == "walls") {
+        echo(corner_wall = r_core - a * sqrt(2));
+        echo(bore_wall = egg_r(ceil_z) - r_crest - thread_gap);
+        echo(side_gap = a - (3 * u / 2 - g));
+    }
+    else {
+        base();
+        translate([0, 0, explode]) cap();
+        solved();
+    }
 }

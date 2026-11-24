@@ -26,6 +26,7 @@ BUILD = ROOT / "build"
 CHECK_RESULTS = BUILD / "check"
 REPLAYS = BUILD / "replay"
 BED_MM = 260.0
+BRIM_MM = 5.0  # the K2 profile's outer brim, which a plate's copies keep clear of each other
 PUBLISHED_BUDGET = 10 * 1024 * 1024
 
 _PROBLEM = re.compile(r"^.*\b(?:WARNING|ERROR)\b.*$", re.M)
@@ -81,6 +82,40 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+_INCLUDE = re.compile(r"^\s*(?:include|use)\s*<([^>]+)>", re.M)
+
+
+def loaded_files(part: dict) -> list[Path]:
+    """The part's source and every file it includes or uses, fonts too, in the order first met."""
+    found: list[Path] = []
+    todo = [part["_dir"] / part["source"]]
+    while todo:
+        path = todo.pop(0).resolve()
+        if path in found:
+            continue
+        if not path.is_relative_to(ROOT.resolve()) or not path.exists():
+            raise SystemExit(f"FAIL {part['id']}: {path.name} is not a file in this repo; a part loads only files beside it")
+        found.append(path)
+        if path.suffix == ".scad":
+            todo += [path.parent / name for name in _INCLUDE.findall(path.read_text(encoding="utf-8"))]
+    return found
+
+
+def source_files(part: dict) -> list[Path]:
+    """The OpenSCAD files of a part's source, its own first."""
+    return [path for path in loaded_files(part) if path.suffix == ".scad"]
+
+
+def source_sha256(part: dict) -> str:
+    """The source's own hash, or for a source that loads other files, a hash over each file's path
+    from the repo and hash, so a change in an included file or a font rebuilds the part."""
+    files = loaded_files(part)
+    if len(files) == 1:
+        return sha256(files[0])
+    listing = "".join(f"{path.relative_to(ROOT.resolve()).as_posix()} {sha256(path)}\n" for path in files)
+    return hashlib.sha256(listing.encode("utf-8")).hexdigest()
+
+
 @dataclass
 class Render:
     log: str
@@ -108,6 +143,7 @@ class Mesh:
     nonmanifold_edges: int
     size: tuple[float, float, float]
     volume_cm3: float
+    volume_mm3: float
 
 
 def facets(path: Path):
@@ -140,7 +176,7 @@ def read_mesh(path: Path) -> Mesh:
                    + a[2] * (b[0] * c[1] - b[1] * c[0])) / 6
     bad = {frozenset(edge) for edge, seen in edges.items() if seen != 1 or edges.get((edge[1], edge[0])) != 1}
     size = tuple(round(high[axis] - low[axis], 3) for axis in range(3)) if kept else (0.0, 0.0, 0.0)
-    return Mesh(kept, len(bad), size, round(abs(volume) / 1000, 1))
+    return Mesh(kept, len(bad), size, round(abs(volume) / 1000, 1), abs(volume))
 
 
 def triangles(path: Path) -> Counter:
@@ -249,6 +285,28 @@ def _grid(tris: list[tuple]) -> dict:
     return grid
 
 
+def published_exports(part: dict) -> list[dict]:
+    """The exports a page offers and published/ holds; a `check_only` export is rendered by the check alone."""
+    return [export for export in part["exports"] if not export.get("check_only")]
+
+
+def export_problems(part: dict) -> list[str]:
+    """What is wrong with the exports' `object` and `check_only` fields."""
+    by_id = {export["id"]: export for export in part["exports"]}
+    problems = []
+    for export in part["exports"]:
+        if "check_only" in export and not isinstance(export["check_only"], bool):
+            problems.append(f"{export['id']}: check_only is true or false")
+        if "object" not in export:
+            continue
+        named = by_id.get(export["object"])
+        if named is None:
+            problems.append(f"{export['id']}: object names no export {export['object']!r}")
+        elif "object" in named:
+            problems.append(f"{export['id']}: object {named['id']} is itself part of an object")
+    return problems
+
+
 def rendered_items(part: dict) -> list[dict]:
     """The assembly items rendered from their own defines; an export item reuses the export's file."""
     return [item for item in (part.get("assembly") or {}).get("items", []) if "defines" in item]
@@ -328,9 +386,11 @@ STAGE_ONLY = ("before_label", "after_label")
 
 def plates(part: dict) -> list[dict]:
     """The plates a part was printed on, in print order. A part without `plates` is one stage
-    plate made from its `replay`."""
+    plate made from its `replay`, and a draft, with neither, has none."""
     if "plates" in part:
         return part["plates"]
+    if "replay" not in part:
+        return []
     return [{"id": None, "stage": True, **part["replay"]}]
 
 
@@ -389,6 +449,85 @@ def plate_problems(part: dict) -> list[str]:
     return problems
 
 
+def draft_problems(part: dict) -> list[str]:
+    """A draft is published before it is printed: no proof or replay yet, and a colour for its model."""
+    if "draft" not in part:
+        return []
+    if part["draft"] is not True or not part.get("published"):
+        return ["draft is true, and only beside published: true"]
+    problems = []
+    if any(key in part for key in ("proof", "replay", "plates")):
+        problems.append("a part with its proof and replay is no longer a draft; remove draft")
+    if not _colour(part.get("stage_colour")):
+        problems.append("a draft needs stage_colour, #rrggbb, since no plate gives its model a colour")
+    return problems
+
+
+def batch_problems(part: dict) -> list[str]:
+    """What is wrong with the shape of a part's batch plates; their layout is checked apart."""
+    batch = part.get("batch")
+    if batch is None:
+        return []
+    if not (isinstance(batch, list) and batch and all(isinstance(plate, dict) for plate in batch)):
+        return ["batch is a list of objects"]
+    items = {item.get("id") for item in (part.get("assembly") or {}).get("items", [])}
+    problems, seen = [], set()
+    for plate in batch:
+        name = plate.get("id")
+        if not (isinstance(name, str) and re.fullmatch(r"[a-z0-9-]+", name)) or name in seen:
+            problems.append(f"batch plate {name!r} needs an id of its own in a-z, 0-9 and -")
+        seen.add(name)
+        if not _bilingual(plate.get("title")):
+            problems.append(f"batch plate {name}: title needs et and en")
+        listed = plate.get("items")
+        if not (isinstance(listed, list) and listed and all(item in items for item in listed)):
+            problems.append(f"batch plate {name}: items are ids of assembly items")
+        if not (_number(plate.get("pitch")) and plate["pitch"] > 0):
+            problems.append(f"batch plate {name}: pitch is a length in mm")
+        sliced = plate.get("sliced")
+        if sliced is not None and not (isinstance(sliced, dict) and set(sliced) == {"seconds", "changes"}
+                                       and all(type(sliced[key]) is int and sliced[key] >= 0 for key in sliced)):
+            problems.append(f"batch plate {name}: sliced is {{seconds, changes}}, whole numbers")
+    return problems
+
+
+def stl_box(path: Path) -> tuple[list[float], list[float]]:
+    """The lowest and highest corner of a binary STL's vertices."""
+    columns = list(zip(*facets(path)))
+    return ([min(min(column) for column in columns[axis::3]) for axis in range(3)],
+            [max(max(column) for column in columns[axis::3]) for axis in range(3)])
+
+
+def plate_layout(part: dict, plate: dict, path_of=None) -> dict:
+    """The copies of a batch plate: a grid at the plate's pitch, centred on the bed, with as many
+    rows and columns as fit with their brims inside it. Positions are each copy's centre in mm from
+    the bed's centre. The footprint is read from the items' files, published/ unless `path_of`
+    gives another place for a file name."""
+    path_of = path_of or (lambda name: part["_dir"] / "published" / name)
+    by_id = {item["id"]: item for item in part["assembly"]["items"]}
+    boxes = [stl_box(path_of(item_file(part, by_id[name]))) for name in plate["items"]]
+    footprint = [round(max(box[1][axis] for box in boxes) - min(box[0][axis] for box in boxes), 3) for axis in (0, 1)]
+    pitch = plate["pitch"]
+    counts = [max(1, math.floor((BED_MM - size - 2 * BRIM_MM) / pitch) + 1) for size in footprint]
+    positions = [[round((column - (counts[0] - 1) / 2) * pitch, 3), round((row - (counts[1] - 1) / 2) * pitch, 3)]
+                 for row in range(counts[1]) for column in range(counts[0])]
+    return {"part": part["id"], "plate": plate["id"], "bed": BED_MM, "brim": BRIM_MM, "pitch": pitch,
+            "footprint": footprint, "positions": positions}
+
+
+def layout_problems(layout: dict) -> list[str]:
+    """Every copy with its brim inside the bed, and no two copies' brims touching."""
+    name, pitch = layout["plate"], layout["pitch"]
+    problems = []
+    for axis, size in enumerate(layout["footprint"]):
+        reach = max(abs(position[axis]) for position in layout["positions"]) + size / 2 + BRIM_MM
+        if reach > BED_MM / 2:
+            problems.append(f"batch plate {name}: a copy's brim reaches {reach - BED_MM / 2:.1f} mm past the bed")
+        if size + 2 * BRIM_MM >= pitch and len({position[axis] for position in layout["positions"]}) > 1:
+            problems.append(f"batch plate {name}: a pitch of {pitch} mm lets the brims of copies {size:.1f} mm across touch")
+    return problems
+
+
 def read_published(part: dict, name: str) -> dict | None:
     """A JSON object from published/, or None when it is missing or not an object."""
     try:
@@ -407,18 +546,22 @@ def published_problems(part: dict) -> list[str]:
     build = read_published(part, "build.json")
     if build is None:
         return ["published/build.json is missing or unreadable; run scripts/build.py"]
-    if build.get("source_sha256") != sha256(part["_dir"] / part["source"]):
+    if build.get("source_sha256") != source_sha256(part):
         problems.append("the source changed since published/ was built")
     check = read_published(part, "check.json")
     if check is None:
         problems.append("published/check.json is missing or unreadable; run scripts/build.py")
     named = {entry.get("file"): entry.get("sha256") for key in ("exports", "assembly")
              for entry in (check or {}).get(key, []) if isinstance(entry, dict)}
-    for name in [export["file"] for export in part["exports"]] + [item_file(part, item) for item in rendered_items(part)]:
+    for name in [export["file"] for export in published_exports(part)] + [item_file(part, item) for item in rendered_items(part)]:
         if not (folder / name).exists():
             problems.append(f"published/{name} is missing")
         elif check is not None and sha256(folder / name) != named.get(name):
             problems.append(f"published/{name} is not the file published/check.json names")
+    if part.get("draft"):
+        return problems
+    if not plates(part):
+        problems.append("a published part needs its replay or plates, or draft: true")
     proof = part.get("proof") or {}
     printed = str(proof.get("printed"))
     try:

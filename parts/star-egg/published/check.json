@@ -1,0 +1,424 @@
+{
+ "id": "star-egg",
+ "openscad": "2026.10.11",
+ "exports": [
+  {
+   "id": "egg",
+   "file": "star-egg.stl",
+   "triangles": 16908,
+   "size_mm": [
+    40.597,
+    40.597,
+    50.995
+   ],
+   "volume_cm3": 38.9,
+   "nonmanifold_edges": 0,
+   "sha256": "18cbe11e7ec779a5bd2a348a0ab3acec5663951d5c24b9cd543fadaaac411174"
+  },
+  {
+   "id": "base",
+   "file": "star-egg-base.stl",
+   "triangles": 15526,
+   "size_mm": [
+    40.597,
+    40.597,
+    25.2
+   ],
+   "volume_cm3": 18.5,
+   "nonmanifold_edges": 0,
+   "sha256": "ebc823655a6a2bcd0d57d16ccccc5928b80f7f189ba81e61712a4048743d0256"
+  },
+  {
+   "id": "base-stars",
+   "file": "star-egg-base-stars.stl",
+   "triangles": 5760,
+   "size_mm": [
+    40.567,
+    40.567,
+    8.793
+   ],
+   "volume_cm3": 0.2,
+   "nonmanifold_edges": 0,
+   "sha256": "750f2e4c2f880493ff374ba50b159b747eed045d68590e2742924317c81f9228"
+  },
+  {
+   "id": "base-mark",
+   "file": "star-egg-base-mark.stl",
+   "triangles": 240,
+   "size_mm": [
+    10.014,
+    10.737,
+    0.6
+   ],
+   "volume_cm3": 0.0,
+   "nonmanifold_edges": 0,
+   "sha256": "1a1b68253dee96848101593b8fdf477957ae5b7007884662850aeb1b14bb7527"
+  },
+  {
+   "id": "base-mark-accent",
+   "file": "star-egg-base-mark-accent.stl",
+   "triangles": 2836,
+   "size_mm": [
+    4.441,
+    1.988,
+    0.6
+   ],
+   "volume_cm3": 0.0,
+   "nonmanifold_edges": 0,
+   "sha256": "09c9750d7a941276c233105271a1fe4987c3c26b149e6a261ed04c9e841734e4"
+  },
+  {
+   "id": "base-band-0",
+   "file": "star-egg-base-band-0.stl",
+   "triangles": 5634,
+   "size_mm": [
+    33.608,
+    33.608,
+    7.12
+   ],
+   "volume_cm3": 4.4,
+   "nonmanifold_edges": 0,
+   "sha256": "1e2201e3f8d9d52780cc893ac1b27a9e5fbfd4575e008f577be957c1fba24e95"
+  },
+  {
+   "id": "base-band-1",
+   "file": "star-egg-base-band-1.stl",
+   "triangles": 764,
+   "size_mm": [
+    35.132,
+    35.132,
+    0.8
+   ],
+   "volume_cm3": 0.8,
+   "nonmanifold_edges": 0,
+   "sha256": "687601e930b1092aaf267fd5466d6d91ab795536e254260ae3d84ff8be104f87"
+  },
+  {
+   "id": "base-band-2",
+   "file": "star-egg-base-band-2.stl",
+   "triangles": 784,
+   "size_mm": [
+    40.518,
+    40.518,
+    0.8
+   ],
+   "volume_cm3": 0.8,
+   "nonmanifold_edges": 0,
+   "sha256": "83ccc4a0f4f853974f9aa9f1dc240b91d4d4f74308d34e1e361e3e41c6cd94ec"
+  },
+  {
+   "id": "base-band-3",
+   "file": "star-egg-base-band-3.stl",
+   "triangles": 784,
+   "size_mm": [
+    40.227,
+    40.227,
+    1.0
+   ],
+   "volume_cm3": 0.9,
+   "nonmanifold_edges": 0,
+   "sha256": "cd2fb27095c73c6d029d83fefb052cee5d58a83b24b1f405d085acaf0573aee3"
+  },
+  {
+   "id": "cap",
+   "file": "star-egg-cap.stl",
+   "triangles": 16194,
+   "size_mm": [
+    39.43,
+    39.43,
+    16.4
+   ],
+   "volume_cm3": 9.0,
+   "nonmanifold_edges": 0,
+   "sha256": "254e697450c400cdb7e7143626ffc0ca5d375d8612a2506c1612f83365fa33f2"
+  },
+  {
+   "id": "cap-stars",
+   "file": "star-egg-cap-stars.stl",
+   "triangles": 6176,
+   "size_mm": [
+    38.142,
+    38.142,
+    8.876
+   ],
+   "volume_cm3": 0.2,
+   "nonmanifold_edges": 0,
+   "sha256": "956f40c088578685eb81953b6039372bd8742b15d4e20238f8bbde912492c33b"
+  },
+  {
+   "id": "cap-band-0",
+   "file": "star-egg-cap-band-0.stl",
+   "triangles": 2066,
+   "size_mm": [
+    39.6,
+    39.6,
+    1.0
+   ],
+   "volume_cm3": 0.4,
+   "nonmanifold_edges": 0,
+   "sha256": "3e61a3d165f6c4c5706847c33d85bfa55a918d1db9f0fe0b74397d530d023a8a"
+  },
+  {
+   "id": "cap-band-1",
+   "file": "star-egg-cap-band-1.stl",
+   "triangles": 1692,
+   "size_mm": [
+    38.821,
+    38.821,
+    0.8
+   ],
+   "volume_cm3": 0.3,
+   "nonmanifold_edges": 0,
+   "sha256": "ab6167a872f560ff3c7c13cb1696524008034135cd5c098c50180ae2dd712624"
+  },
+  {
+   "id": "cap-band-2",
+   "file": "star-egg-cap-band-2.stl",
+   "triangles": 764,
+   "size_mm": [
+    29.456,
+    29.456,
+    0.8
+   ],
+   "volume_cm3": 0.5,
+   "nonmanifold_edges": 0,
+   "sha256": "998dcb15dfbdae72b3cdd3917abb76743726516a23493f791cc2402406042aea"
+  },
+  {
+   "id": "cap-band-3",
+   "file": "star-egg-cap-band-3.stl",
+   "triangles": 2814,
+   "size_mm": [
+    27.053,
+    27.053,
+    8.275
+   ],
+   "volume_cm3": 2.5,
+   "nonmanifold_edges": 0,
+   "sha256": "c3007b51d5465a5fe4d67a83c9a10bcab4c50e6d285146dd5ef8f0986d87b443"
+  },
+  {
+   "id": "pieces",
+   "file": "star-egg-pieces.stl",
+   "triangles": 382,
+   "size_mm": [
+    89.8,
+    32.8,
+    11.8
+   ],
+   "volume_cm3": 5.4,
+   "nonmanifold_edges": 0,
+   "sha256": "7924dc055759b3d88e8e35d5d0381ed2672f2be83dc35fe8c3b662a806725597"
+  },
+  {
+   "id": "test-base",
+   "file": "star-egg-test-base.stl",
+   "triangles": 3950,
+   "size_mm": [
+    37.563,
+    37.563,
+    8.0
+   ],
+   "volume_cm3": 3.8,
+   "nonmanifold_edges": 0,
+   "sha256": "4f9248e87085690f70418bb2cbe15e7ad3acd93067ec8adf28cd532d407b7369"
+  },
+  {
+   "id": "test-cap",
+   "file": "star-egg-test-cap.stl",
+   "triangles": 9840,
+   "size_mm": [
+    37.563,
+    37.563,
+    8.4
+   ],
+   "volume_cm3": 3.7,
+   "nonmanifold_edges": 0,
+   "sha256": "c50d71e52d01216c9c660501f90fed6b24d7a4f6072888afcaf02a653ccc1701"
+  },
+  {
+   "id": "test-piece",
+   "file": "star-egg-test-piece.stl",
+   "triangles": 60,
+   "size_mm": [
+    17.8,
+    11.8,
+    5.8
+   ],
+   "volume_cm3": 0.8,
+   "nonmanifold_edges": 0,
+   "sha256": "fe02f55ad1005d520a73eee452726613d1c18eda57014899b406f3145ac396f0"
+  }
+ ],
+ "probes": [
+  {
+   "id": "cube-6",
+   "label": {
+    "et": "Kuubiku serv 6 mm",
+    "en": "6 mm cubes"
+   },
+   "checks": [
+    {
+     "id": "closed",
+     "label": {
+      "et": "Kokkupandud kuubik mahub munasse ja kork läheb peale",
+      "en": "The packed cube fits and the cap goes on"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "raised",
+     "label": {
+      "et": "1,5 mm kõrgemale jäänud tükk ei lase korki peale",
+      "en": "A piece standing 1.5 mm high stops the cap"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "thread",
+     "label": {
+      "et": "Keermel on vahet, kork ei hõõrdu alusesse",
+      "en": "The thread has play, the cap does not rub the base"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "side-gap",
+     "label": {
+      "et": "Kuubiku ja süvendi seina vahel on vähemalt 0,3 mm",
+      "en": "At least 0.3 mm between the cube and the pocket wall"
+     },
+     "passed": true,
+     "value": 0.35
+    },
+    {
+     "id": "corner-wall",
+     "label": {
+      "et": "Süvendi nurga ja keerme vahel on vähemalt 1,5 mm seina",
+      "en": "At least 1.5 mm of wall between the pocket corner and the thread"
+     },
+     "passed": true,
+     "value": 1.6
+    },
+    {
+     "id": "bore-wall",
+     "label": {
+      "et": "Korgi sein on keerme kohal vähemalt 1,5 mm paks",
+      "en": "The cap wall over the thread is at least 1.5 mm thick"
+     },
+     "passed": true,
+     "value": 1.93955
+    },
+    {
+     "id": "overlap",
+     "label": {
+      "et": "Värvilised osad ei kattu",
+      "en": "No two colour parts overlap"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "union-minus-parts",
+     "label": {
+      "et": "Värvilised osad täidavad kumbagi poolt tervenisti",
+      "en": "The colour parts fill each half completely"
+     },
+     "passed": true,
+     "value": null
+    },
+    {
+     "id": "parts-minus-union",
+     "label": {
+      "et": "Ükski värviline osa ei ulatu oma poolest välja",
+      "en": "No colour part reaches outside its half"
+     },
+     "passed": true,
+     "value": null
+    }
+   ]
+  }
+ ],
+ "assembly": [
+  {
+   "id": "piece-v",
+   "file": "assembly-piece-v.stl",
+   "triangles": 44,
+   "size_mm": [
+    11.8,
+    11.8,
+    5.8
+   ],
+   "sha256": "9c9f8a1939240867afb944abf6e75ff0900ca9cf9642250233180e83c6a11403"
+  },
+  {
+   "id": "piece-l",
+   "file": "assembly-piece-l.stl",
+   "triangles": 58,
+   "size_mm": [
+    5.8,
+    11.8,
+    17.8
+   ],
+   "sha256": "6ce74070548841f80abfba7be52eaa40ff8bf2010b99fdbba468405a8223a831"
+  },
+  {
+   "id": "piece-t",
+   "file": "assembly-piece-t.stl",
+   "triangles": 54,
+   "size_mm": [
+    11.8,
+    5.8,
+    17.8
+   ],
+   "sha256": "7d959b2f5979c23177e274acf4dbe4fa4c18df744d4d17380fd01a45fc7783e0"
+  },
+  {
+   "id": "piece-z",
+   "file": "assembly-piece-z.stl",
+   "triangles": 54,
+   "size_mm": [
+    17.8,
+    11.8,
+    5.8
+   ],
+   "sha256": "26e34e79b44b444cbc07f4028052833797a9984974cf3835fd8f167d73547bcf"
+  },
+  {
+   "id": "piece-a",
+   "file": "assembly-piece-a.stl",
+   "triangles": 54,
+   "size_mm": [
+    11.8,
+    11.8,
+    11.8
+   ],
+   "sha256": "ed8163e882a0e771735fad47234493bae20976b291254349cb1b4b7e8134c0a8"
+  },
+  {
+   "id": "piece-b",
+   "file": "assembly-piece-b.stl",
+   "triangles": 58,
+   "size_mm": [
+    11.8,
+    11.8,
+    11.8
+   ],
+   "sha256": "a0273837711eec3ce454fb42918bee6a7054210d77c8d5e4f3f57e5469561e77"
+  },
+  {
+   "id": "piece-p",
+   "file": "assembly-piece-p.stl",
+   "triangles": 46,
+   "size_mm": [
+    11.8,
+    11.8,
+    11.8
+   ],
+   "sha256": "b35f5ddc278dbd583bab9481ceacd893651a8821fb3be5f2774973a01999761b"
+  }
+ ]
+}

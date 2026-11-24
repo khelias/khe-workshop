@@ -1,6 +1,6 @@
 # ADR-001: Published parts carry their proof, in OpenSCAD, with generated data committed
 
-- **Status:** Accepted (2026-11-24); point 1 superseded by [ADR-002](002-the-print-and-its-use-are-the-proof.md); point 3's budget raised from 5 to 10 MB on 2026-11-19, for the yarn bowl, before anything depended on the number; point 3 extended to assembly renders on 2026-11-24, for the Soma egg, and to one replay per plate on 2026-11-24, for a part printed on several plates
+- **Status:** Accepted (2026-11-24); point 1 superseded by [ADR-002](002-the-print-and-its-use-are-the-proof.md); point 3's budget raised from 5 to 10 MB on 2026-11-19, for the yarn bowl, before anything depended on the number; point 3 extended to assembly renders on 2026-11-24, for the Soma egg, and to one replay per plate on 2026-11-24, for a part printed on several plates; on 2026-11-24, for the star egg, point 2 lets a part include another part's source, point 3 adds a part's plate figures, recorded by hand, and point 4 adds the star egg's licence
 - **Related:** [estate ADR-043](https://github.com/khelias/khe-architecture/blob/main/decisions/043-household-parts-are-public-source-built-into-khe-sites.md)
 
 ## Context
@@ -17,7 +17,11 @@ the page, and licences that respect where each shape came from.
    source and does not appear in the room.
 2. **OpenSCAD is the source language.** Both first parts are written in it, its
    renders can be compared byte for byte, and it can later run the same source in
-   a visitor's browser.
+   a visitor's browser. A part may `include` another part's source, so a shape such
+   as the Soma egg's curve, thread and pieces exists once; the included file draws
+   nothing of its own behind a `library` flag, the source hash in `build.json`
+   covers every file the source includes or uses, and the page links each
+   OpenSCAD file.
 3. **Generated page data is committed per published part, within 10 MB.** G-code
    cannot be made in CI, because the printer's slicer profile stays out of public
    repos. The STL files, the replay and the check results are written locally by
@@ -29,10 +33,14 @@ the page, and licences that respect where each shape came from.
    is not an export, `published/assembly-<item>.stl`: its pieces in place, shown in
    the room's parts view and never offered as a download, within the same budget.
    The budget is there because every rebuild adds a full copy to the history and
-   the page loads the part's STL when it opens.
+   the page loads the part's STL when it opens. A part's `batch` plates may carry
+   `sliced` figures, time and colour changes, copied by hand from the sliced file,
+   since the slicer profile stays private; no check stands behind them.
 4. **Licences are per part.** The tools are MIT and our own models CC BY 4.0. The
    U6-LR holder is CC BY-NC 4.0 with credit, because its twist-lock was measured
-   from Printables model 789473 by Peter H, which is CC BY-NC.
+   from Printables model 789473 by Peter H, which is CC BY-NC. The star egg is
+   CC BY-NC 4.0 too, because its prints are sold, and NC keeps selling them the
+   household's.
 
 ## Alternatives considered
 
@@ -45,7 +53,8 @@ the page, and licences that respect where each shape came from.
 
 ## Consequences
 
-- A part cannot appear in the room until it has really been printed and used.
+- A part cannot appear in the room as finished until it has really been printed
+  and used; before that it appears only as a labelled draft (ADR-002 point 3).
 - A published part's files must be rebuilt whenever its source changes, and under
   the OpenSCAD version recorded in its `build.json`.
 - The repo grows by at most 10 MB per published part, each time it is rebuilt.
