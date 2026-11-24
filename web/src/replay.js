@@ -179,18 +179,15 @@ export function turnedBox([minX, minY, maxX, maxY], rotateDeg) {
   return [width * cos + depth * sin, width * sin + depth * cos];
 }
 
-// The row of finished plates beside the one printing, which sits at the centre: the x offset
-// of each plate but the last, which is never finished while another prints, and where the row
-// ends. It starts clear of the widest plate and runs along +x.
+// Each plate's place in one row along x, in print order and centred on the bed, so a plate
+// is printed where it then stands: the x offset of each plate's centre and the row's ends.
 export function rowLayout(boxes, gap = 15) {
-  const widest = Math.max(...boxes.map(([width]) => width));
-  let end = widest / 2;
-  let x = end + 20;
-  const offsets = boxes.slice(0, -1).map(([width]) => {
-    const centre = x + width / 2;
-    end = x + width;
-    x = end + gap;
+  const width = boxes.reduce((sum, [plate]) => sum + plate, 0) + gap * (boxes.length - 1);
+  let x = -width / 2;
+  const offsets = boxes.map(([plate]) => {
+    const centre = x + plate / 2;
+    x += plate + gap;
     return centre;
   });
-  return { offsets, end };
+  return { offsets, low: -width / 2, high: width / 2 };
 }

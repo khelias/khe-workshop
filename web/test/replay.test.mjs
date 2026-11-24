@@ -149,7 +149,7 @@ test('one slider runs through the plates one after another', () => {
   assert.deepEqual(plateAt(spans, 1200, 1000), { plate: 2, seconds: 650 }, 'past the end is the end');
 });
 
-test('finished plates stand in a row clear of each other and of the plate printing', () => {
+test('each plate has its own place in one row, centred, clear of its neighbours', () => {
   const cases = [
     [turnedBox([73.44, 89.7, 186.58, 170.32], 0), turnedBox([95.31, 100.31, 164.69, 159.69], 0), turnedBox([95.31, 100.31, 164.69, 159.69], 0)],
     [turnedBox([58.11, 48.96, 201.89, 211.04], 90), turnedBox([42.22, 42.22, 217.78, 217.78], 90)],
@@ -157,17 +157,16 @@ test('finished plates stand in a row clear of each other and of the plate printi
   ];
   assert.deepEqual(turnedBox([0, 0, 40, 10], 90).map(Math.round), [10, 40]);
   for (const boxes of cases) {
-    const { offsets, end } = rowLayout(boxes);
-    assert.equal(offsets.length, boxes.length - 1, 'the last plate is never in the row');
+    const { offsets, low, high } = rowLayout(boxes);
+    assert.equal(offsets.length, boxes.length);
     const spans = offsets.map((offset, index) => [offset - boxes[index][0] / 2, offset + boxes[index][0] / 2]);
-    const centreHalf = Math.max(...boxes.map(([width]) => width)) / 2;
-    spans.forEach(([low], index) => {
-      assert.ok(low > centreHalf, `plate ${index} in the row is clear of any plate at the centre`);
-      if (index) assert.ok(low > spans[index - 1][1], `plate ${index} is clear of plate ${index - 1}`);
+    spans.forEach(([start], index) => {
+      if (index) assert.ok(start > spans[index - 1][1], `plate ${index} is clear of plate ${index - 1}`);
     });
-    assert.equal(end, spans.at(-1)[1], 'the row ends at its last plate');
+    assert.ok(Math.abs(spans[0][0] - low) < 1e-9 && Math.abs(spans.at(-1)[1] - high) < 1e-9, 'the row runs from its first plate to its last');
+    assert.ok(Math.abs(low + high) < 1e-9, 'the row is centred on the bed');
   }
-  assert.deepEqual(rowLayout([[40, 40]]), { offsets: [], end: 20 }, 'one plate has no row');
+  assert.deepEqual(rowLayout([[40, 40]]), { offsets: [0], low: -20, high: 20 }, 'one plate stays at the centre');
 });
 
 test('durations read in hours and minutes', () => {

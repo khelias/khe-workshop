@@ -91,9 +91,9 @@ display `colour` (`#rrggbb`, which wins over the G-code's, since the slicer's
 filament colours are often unset). At most one plate has `stage: true`, the one that
 prints `stage_export` alone; only it carries `before_label`, `after_label` and the
 part's `stage_inlay`, and the stage draws the ghost and the model's top and base
-with it. The Print view plays the plates one after another, with finished plates
-standing in a row beside the one printing, and the facts get a row per plate and a
-total. An export with `"test": true` is listed under the fit tests.
+with it. The Print view plays the plates one after another, each printed in its own
+place in one row, and the facts get a row per plate and a total. An export with
+`"test": true` is listed under the fit tests.
 
 A part made of several pieces may declare an `assembly`: a tab `label` in et and en,
 the slider's `start` (0 to 1) and `items`, each an export by id or its own `defines`

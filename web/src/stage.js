@@ -344,29 +344,31 @@ class Stage {
     const row = rowLayout(this.printPlates.map((plate) => plate.box));
     row.offsets.forEach((offset, index) => { this.printPlates[index].offset = offset; });
     this.printFrame = this.partFrame;
-    if (row.offsets.length) {
-      this.printFrame = this.rowFrame(row.end);
-      this.buildShelf(row.end + 20);
+    if (this.plates.length > 1) {
+      this.printFrame = this.rowFrame(row);
+      this.buildShelf(row);
     }
     this.buildMarks();
   }
 
-  // The largest plate at the centre and every finished plate in the row beside it.
-  rowFrame(end) {
-    const boxes = this.printPlates.map((plate) => plate.box);
-    const low = -Math.max(...boxes.map(([width]) => width)) / 2;
-    const deepest = Math.max(...boxes.map(([, depth]) => depth));
+  // The whole row from the start: no plate moves, so the camera need not either.
+  rowFrame({ low, high }) {
+    const deepest = Math.max(...this.printPlates.map((plate) => plate.box[1]));
     const height = Math.max(this.size[2], ...this.printPlates.map((plate) => plate.height));
-    return { centre: new THREE.Vector3((low + end) / 2, height / 2, 0), radius: Math.hypot(end - low, deepest, height) / 2 };
+    return { centre: new THREE.Vector3((low + high) / 2, height / 2, 0), radius: Math.hypot(high - low, deepest, height) / 2 };
   }
 
   // Where the row runs past the bed, the surface goes on under it, without the bed's grid.
-  buildShelf(end) {
+  buildShelf({ low, high }) {
     const half = this.config.bed / 2;
-    if (end <= half) return;
-    this.shelf = new THREE.Mesh(new THREE.PlaneGeometry(end - half, this.config.bed), this.bedMaterial);
-    this.shelf.rotation.x = -Math.PI / 2;
-    this.shelf.position.set((half + end) / 2, -0.3, 0);
+    this.shelf = new THREE.Group();
+    for (const [from, to] of [[low - 20, -half], [half, high + 20]]) {
+      if (to <= from) continue;
+      const piece = new THREE.Mesh(new THREE.PlaneGeometry(to - from, this.config.bed), this.bedMaterial);
+      piece.rotation.x = -Math.PI / 2;
+      piece.position.set((from + to) / 2, -0.3, 0);
+      this.shelf.add(piece);
+    }
     this.shelf.visible = this.view === 'print';
     this.scene.add(this.shelf);
   }
@@ -432,11 +434,9 @@ class Stage {
     if (this.top) this.top.visible = !isPrint && !isParts;
     if (this.inlay) this.inlay.visible = !isParts;
     if (this.items) this.items.visible = isParts;
-    if (!isPrint) {
-      this.stageGroup.visible = true;
-      this.stageGroup.position.x = 0;
-    }
+    if (!isPrint) this.stageGroup.visible = true;
     for (const plate of this.printPlates ?? []) {
+      plate.group.position.x = isPrint ? plate.offset : 0;
       plate.full.visible = isPrint;
       if (plate.walls) plate.walls.visible = isPrint;
     }
@@ -480,7 +480,6 @@ class Stage {
     const finished = value >= SLIDER_MAX;
     this.printPlates.forEach((plate, index) => {
       plate.group.visible = index <= current;
-      plate.group.position.x = index < current ? plate.offset : 0;
       if (index < current) {
         // A phone draws a finished plate's outer walls only, to keep its line count low.
         plate.full.visible = !this.lite;
@@ -505,7 +504,7 @@ class Stage {
     const points = plate.full.geometry.attributes.position.array;
     const last = full.upTo - 1;
     this.head.visible = !finished && last >= 0;
-    if (last >= 0) this.head.position.set(points[last * 3], points[last * 3 + 1], points[last * 3 + 2]);
+    if (last >= 0) this.head.position.set(points[last * 3] + plate.offset, points[last * 3 + 1], points[last * 3 + 2]);
     let text = this.text.print
       .replace('{time}', formatDuration(plate.before + seconds))
       .replace('{total}', formatDuration(this.totalSeconds))
