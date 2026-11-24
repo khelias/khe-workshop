@@ -10,6 +10,11 @@ const PLAY_MS = 24000;
 const CHAMBER = '#14181b';
 const CAP = '#e8b04a';
 const NO_CLIP = [];
+// The print view's own bed per plate, for a part on several plates.
+const PAD_MARGIN = 12;
+const PAD_GAP = 24;
+const GRID_MM = 20;
+const GRID_COLOURS = ['#4c5961', '#3a454c'];
 
 function hexToRgb(hex) {
   const value = parseInt(hex.slice(1), 16);
@@ -134,15 +139,9 @@ class Stage {
     rim.position.set(-300, 180, -260);
     scene.add(rim);
 
-    const bedMm = this.config.bed;
     this.bedMaterial = new THREE.MeshStandardMaterial({ color: '#262e33', roughness: 0.9 });
-    const bed = new THREE.Mesh(new THREE.PlaneGeometry(bedMm, bedMm), this.bedMaterial);
-    bed.rotation.x = -Math.PI / 2;
-    bed.position.y = -0.3;
-    scene.add(bed);
-    const grid = new THREE.GridHelper(bedMm, 13, '#4c5961', '#3a454c');
-    grid.position.y = -0.2;
-    scene.add(grid);
+    this.bed = this.bedSurface(this.config.bed, 0);
+    scene.add(this.bed);
 
     // Print coordinates are Z up; the scene is Y up.
     const world = new THREE.Group();
@@ -341,36 +340,42 @@ class Stage {
       before += plate.meta.print_seconds;
     }
     this.totalSeconds = before;
-    const row = rowLayout(this.printPlates.map((plate) => plate.box));
+    for (const plate of this.printPlates) plate.pad = Math.max(...plate.box) + 2 * PAD_MARGIN;
+    const row = rowLayout(this.printPlates.map((plate) => [plate.pad, plate.pad]), PAD_GAP);
     row.offsets.forEach((offset, index) => { this.printPlates[index].offset = offset; });
     this.printFrame = this.partFrame;
     if (this.plates.length > 1) {
       this.printFrame = this.rowFrame(row);
-      this.buildShelf(row);
+      this.buildPads();
     }
     this.buildMarks();
   }
 
   // The whole row from the start: no plate moves, so the camera need not either.
   rowFrame({ low, high }) {
-    const deepest = Math.max(...this.printPlates.map((plate) => plate.box[1]));
+    const deepest = Math.max(...this.printPlates.map((plate) => plate.pad));
     const height = Math.max(this.size[2], ...this.printPlates.map((plate) => plate.height));
     return { centre: new THREE.Vector3((low + high) / 2, height / 2, 0), radius: Math.hypot(high - low, deepest, height) / 2 };
   }
 
-  // Where the row runs past the bed, the surface goes on under it, without the bed's grid.
-  buildShelf({ low, high }) {
-    const half = this.config.bed / 2;
-    this.shelf = new THREE.Group();
-    for (const [from, to] of [[low - 20, -half], [half, high + 20]]) {
-      if (to <= from) continue;
-      const piece = new THREE.Mesh(new THREE.PlaneGeometry(to - from, this.config.bed), this.bedMaterial);
-      piece.rotation.x = -Math.PI / 2;
-      piece.position.set((from + to) / 2, -0.3, 0);
-      this.shelf.add(piece);
-    }
-    this.shelf.visible = this.view === 'print';
-    this.scene.add(this.shelf);
+  // Every plate's bed is there from the start, so the plates still to come show as empty beds.
+  buildPads() {
+    this.pads = new THREE.Group();
+    for (const plate of this.printPlates) this.pads.add(this.bedSurface(plate.pad, plate.offset));
+    this.pads.visible = this.view === 'print';
+    this.scene.add(this.pads);
+  }
+
+  bedSurface(size, x) {
+    const surface = new THREE.Group();
+    const plane = new THREE.Mesh(new THREE.PlaneGeometry(size, size), this.bedMaterial);
+    plane.rotation.x = -Math.PI / 2;
+    plane.position.y = -0.3;
+    const grid = new THREE.GridHelper(size, Math.max(1, Math.round(size / GRID_MM)), ...GRID_COLOURS);
+    grid.position.y = -0.2;
+    surface.add(plane, grid);
+    surface.position.x = x;
+    return surface;
   }
 
   // A mark where each later plate starts, and one at each colour change inside a plate's replay.
@@ -441,7 +446,10 @@ class Stage {
       if (plate.walls) plate.walls.visible = isPrint;
     }
     for (const mark of this.marks ?? []) mark.hidden = !isPrint;
-    if (this.shelf) this.shelf.visible = isPrint;
+    if (this.pads) {
+      this.pads.visible = isPrint;
+      this.bed.visible = !isPrint;
+    }
     if (this.view !== 'model') this.turntable.rotation.z = 0;
   }
 
