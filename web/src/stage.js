@@ -8,7 +8,9 @@ import { bounds, moveBy, parseStl, placeOnBed, trianglesWhere } from './stl.js';
 
 const SLIDER_MAX = 1000;
 const PLAY_MS = 24000;
-const CHAMBER = '#14181b';
+// The bed is a plate this thick, its top just under the part.
+const BED_MM = 2;
+const BED_TOP = -0.3;
 const CAP = '#e8b04a';
 const NO_CLIP = [];
 // The print view's own bed per plate, for a part on several plates.
@@ -26,7 +28,7 @@ function hexToRgb(hex) {
   return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
 }
 
-// A black print would vanish in the dark chamber, so very dark filament is drawn lighter.
+// A black print would vanish on the dark bed, so very dark filament is drawn lighter.
 function isDark([r, g, b]) {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b < 60;
 }
@@ -56,19 +58,49 @@ function geometryOf(part) {
 function lineObject(set) {
   const geometry = geometryOf(set);
   geometry.setAttribute('color', new THREE.BufferAttribute(set.colours, 3, true));
-  const lines = new THREE.LineSegments(geometry, new THREE.LineBasicMaterial({ vertexColors: true }));
+  const lines = new THREE.LineSegments(geometry, new THREE.LineBasicMaterial({ vertexColors: true, toneMapped: false }));
   lines.frustumCulled = false;
   return lines;
 }
 
+// Printed plastic: a soft sheen and a faint clear coat catch the studio's soft boxes.
 function solidMaterial(colour, options = {}) {
-  return new THREE.MeshStandardMaterial({ color: colour, roughness: 0.5, side: THREE.DoubleSide, ...options });
+  return new THREE.MeshPhysicalMaterial({
+    color: colour, roughness: 0.46, clearcoat: 0.08, clearcoatRoughness: 0.6, sheen: 0.15, sheenRoughness: 0.8, sheenColor: '#ffffff',
+    side: THREE.DoubleSide, clipShadows: true, ...options,
+  });
 }
 
 function solidMesh(geometry, material) {
   const mesh = new THREE.Mesh(geometry, material);
   mesh.renderOrder = 2;
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
   return mesh;
+}
+
+// Soft boxes in a warm room, turned into the light the plastic reflects.
+function studioLight(renderer) {
+  const room = new THREE.Scene();
+  room.add(new THREE.Mesh(new THREE.SphereGeometry(50, 32, 16), new THREE.MeshBasicMaterial({ color: '#8a847c', side: THREE.BackSide })));
+  const softBox = (colour, [width, height], position) => {
+    const box = new THREE.Mesh(new THREE.PlaneGeometry(width, height), new THREE.MeshBasicMaterial({ color: colour, side: THREE.DoubleSide }));
+    box.position.set(...position);
+    box.lookAt(0, 0, 0);
+    room.add(box);
+  };
+  softBox('#ffffff', [30, 20], [-25, 30, 20]);
+  softBox('#fff2e0', [20, 40], [35, 10, 10]);
+  softBox('#dfe8ff', [30, 10], [0, -10, -40]);
+  softBox('#ffffff', [40, 40], [0, 45, 0]);
+  const generator = new THREE.PMREMGenerator(renderer);
+  const texture = generator.fromScene(room, 0.02).texture;
+  generator.dispose();
+  room.traverse((object) => {
+    object.geometry?.dispose();
+    object.material?.dispose();
+  });
+  return texture;
 }
 
 class Stage {
@@ -116,7 +148,7 @@ class Stage {
     this.inlay = this.addSolid(geometryOf(mesh), this.stagePlate.inlay.colour, { polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -4 }, this.stageGroup);
     this.inlay.material.clippingPlanes = this.view === 'cut' ? this.clipped : NO_CLIP;
     this.inlay.visible = this.view !== 'parts';
-    this.invalidate();
+    this.invalidate(true);
   }
 
   addSolid(geometry, colour, options = {}, parent = this.turntable) {
@@ -128,23 +160,42 @@ class Stage {
   }
 
   buildScene(mesh) {
-    const renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true, stencil: true });
+    // The canvas is transparent: the paper behind the part is the view's background in the room's CSS.
+    const renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true, stencil: true, alpha: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.localClippingEnabled = true;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
+    // The light is fixed in the room, so orbiting needs no new shadows; only a change to the scene does.
+    renderer.shadowMap.autoUpdate = false;
     this.renderer = renderer;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(CHAMBER);
+    scene.environment = studioLight(renderer);
+    scene.environmentIntensity = 0.75;
     this.scene = scene;
-    scene.add(new THREE.HemisphereLight('#e8eff2', '#2a3136', 1.9));
-    const key = new THREE.DirectionalLight('#ffffff', 2.8);
-    key.position.set(240, 420, 300);
+    scene.add(new THREE.HemisphereLight('#ffffff', '#b8a990', 0.5));
+    // One key light from the camera's left and above, its shadow falling behind the part.
+    const key = new THREE.DirectionalLight('#fff4e8', 2);
+    const extent = this.config.bed;
+    key.position.set(-50, 420, 240);
+    key.castShadow = true;
+    key.shadow.mapSize.setScalar(this.lite ? 1024 : 2048);
+    key.shadow.radius = 4;
+    key.shadow.bias = -0.0004;
+    key.shadow.normalBias = 0.4;
+    Object.assign(key.shadow.camera, { left: -extent, right: extent, top: extent, bottom: -extent, near: 1, far: 1200 });
     scene.add(key);
-    const rim = new THREE.DirectionalLight('#9fc4d4', 1.1);
-    rim.position.set(-300, 180, -260);
-    scene.add(rim);
 
-    this.bedMaterial = new THREE.MeshStandardMaterial({ color: '#262e33', roughness: 0.9 });
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(extent * 2, extent * 2), new THREE.ShadowMaterial({ opacity: 0.18 }));
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = BED_TOP - BED_MM;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    this.bedMaterial = new THREE.MeshStandardMaterial({ color: '#2b2d30', roughness: 0.7 });
     this.bed = this.bedSurface(this.config.bed, 0);
     scene.add(this.bed);
 
@@ -166,9 +217,8 @@ class Stage {
     this.clipped = [this.clip];
     const colour = (this.stagePlate ?? this.plates[0]).colour;
     const bodyGeometry = geometryOf(placed.body);
-    this.materials = [new THREE.MeshStandardMaterial({ color: isDark(hexToRgb(colour)) ? '#676e74' : colour, roughness: 0.58, side: THREE.DoubleSide })];
-    this.body = new THREE.Mesh(bodyGeometry, this.materials[0]);
-    this.body.renderOrder = 2;
+    this.materials = [solidMaterial(isDark(hexToRgb(colour)) ? '#676e74' : colour)];
+    this.body = solidMesh(bodyGeometry, this.materials[0]);
     this.turntable.add(this.body);
 
     if (placed.top.positions.length) this.top = this.addSolid(geometryOf(placed.top), top.colour, {}, this.stageGroup);
@@ -180,23 +230,22 @@ class Stage {
       const cut = below.z - 0.02;
       const material = this.materials[0].clone();
       material.clippingPlanes = [new THREE.Plane(new THREE.Vector3(0, -1, 0), cut)];
-      this.base = new THREE.Mesh(geometryOf(trianglesWhere(placed.body, (a, b, c) => Math.min(a, b, c) < cut)), material);
-      this.base.renderOrder = 2;
+      this.base = solidMesh(geometryOf(trianglesWhere(placed.body, (a, b, c) => Math.min(a, b, c) < cut)), material);
       this.stageGroup.add(this.base);
     }
 
     this.buildCut(geometryOf({ positions: placed.whole.positions }));
 
     if (this.stagePlate) {
-      this.ghost = new THREE.Mesh(bodyGeometry, new THREE.MeshBasicMaterial({ color: '#9fb4bd', transparent: true, opacity: 0.07, depthWrite: false, side: THREE.DoubleSide }));
+      this.ghost = new THREE.Mesh(bodyGeometry, new THREE.MeshBasicMaterial({ color: '#9fb4bd', transparent: true, opacity: 0.07, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }));
       this.stageGroup.add(this.ghost);
     }
 
-    this.head = new THREE.Mesh(new THREE.SphereGeometry(Math.max(this.size[2] / 110, 1.1), 16, 12), new THREE.MeshBasicMaterial({ color: CAP }));
+    this.head = new THREE.Mesh(new THREE.SphereGeometry(Math.max(this.size[2] / 110, 1.1), 16, 12), new THREE.MeshBasicMaterial({ color: CAP, toneMapped: false }));
     this.turntable.add(this.head);
 
     this.partFrame = { centre: new THREE.Vector3(0, this.size[2] / 2, 0), radius: Math.hypot(...this.size) / 2 };
-    this.camera = new THREE.PerspectiveCamera(30, 1, 1, 4000);
+    this.camera = new THREE.PerspectiveCamera(24, 1, 1, 4000);
     this.controls = new OrbitControls(this.camera, this.canvas);
     this.controls.enablePan = false;
     this.frameOn(this.partFrame);
@@ -222,8 +271,8 @@ class Stage {
     this.cutMasks.add(stencil(THREE.BackSide, THREE.IncrementWrapStencilOp), stencil(THREE.FrontSide, THREE.DecrementWrapStencilOp));
     this.turntable.add(this.cutMasks);
     const reach = this.config.bed * 2;
-    this.cap = new THREE.Mesh(new THREE.PlaneGeometry(reach, reach), new THREE.MeshStandardMaterial({
-      color: CAP, roughness: 0.7, stencilWrite: true, stencilRef: 0, stencilFunc: THREE.NotEqualStencilFunc,
+    this.cap = new THREE.Mesh(new THREE.PlaneGeometry(reach, reach), new THREE.MeshBasicMaterial({
+      color: CAP, toneMapped: false, stencilWrite: true, stencilRef: 0, stencilFunc: THREE.NotEqualStencilFunc,
       stencilFail: THREE.ReplaceStencilOp, stencilZFail: THREE.ReplaceStencilOp, stencilZPass: THREE.ReplaceStencilOp,
     }));
     this.cap.rotation.y = Math.PI / 2;
@@ -318,7 +367,7 @@ class Stage {
     const loader = { print: !this.printPlates && 'loadPaths', parts: !this.items && 'loadItems' }[view];
     if (loader) {
       this.configureView();
-      this.invalidate();
+      this.invalidate(true);
       this.showStatus(view === 'parts' ? this.text.loading_parts : this.text.loading);
       this.loads[loader] ??= this[loader]();
       try {
@@ -402,12 +451,14 @@ class Stage {
 
   bedSurface(size, x) {
     const surface = new THREE.Group();
-    const plane = new THREE.Mesh(new THREE.PlaneGeometry(size, size), this.bedMaterial);
-    plane.rotation.x = -Math.PI / 2;
-    plane.position.y = -0.3;
+    const plate = new THREE.Mesh(new THREE.BoxGeometry(size, BED_MM, size), this.bedMaterial);
+    plate.position.y = BED_TOP - BED_MM / 2;
+    plate.castShadow = true;
+    plate.receiveShadow = true;
     const grid = new THREE.GridHelper(size, Math.max(1, Math.round(size / GRID_MM)), ...GRID_COLOURS);
-    grid.position.y = -0.2;
-    surface.add(plane, grid);
+    grid.material.toneMapped = false;
+    grid.position.y = BED_TOP + 0.1;
+    surface.add(plate, grid);
     surface.position.x = x;
     return surface;
   }
@@ -499,7 +550,7 @@ class Stage {
     } else if (this.printPlates) {
       this.applyPrint(value);
     }
-    this.invalidate();
+    this.invalidate(true);
   }
 
   applyCut(value) {
@@ -594,7 +645,9 @@ class Stage {
     this.play.textContent = this.text.play;
   }
 
-  invalidate() {
+  // `moved` when a solid moved or changed, so the shadows are drawn again.
+  invalidate(moved = false) {
+    if (moved) this.renderer.shadowMap.needsUpdate = true;
     if (this.frame || !this.visible) return;
     this.frame = requestAnimationFrame(() => {
       this.frame = 0;
