@@ -16,6 +16,19 @@ const PAD_GAP = 24;
 const GRID_MM = 20;
 const GRID_COLOURS = ['#4c5961', '#3a454c'];
 
+// How far the camera stands to keep a box of these half extents (scene x, y, z) in view from
+// this direction. A long, low row of plates fits much closer than its bounding sphere would.
+function boxDistance([hx, hy, hz], azimuth, elevation, camera) {
+  const [sinA, cosA] = [Math.abs(Math.sin(azimuth)), Math.abs(Math.cos(azimuth))];
+  const [sinE, cosE] = [Math.sin(elevation), Math.cos(elevation)];
+  const tanV = Math.tan((camera.fov * Math.PI) / 360);
+  const width = hx * cosA + hz * sinA;
+  const height = hx * sinA * sinE + hy * cosE + hz * cosA * sinE;
+  const depth = hx * sinA * cosE + hy * sinE + hz * cosA * cosE;
+  // The near half of the box stands closer than its centre, so the camera steps back by half its depth.
+  return Math.max(width / (tanV * camera.aspect), height / tanV) + depth * 0.5;
+}
+
 function hexToRgb(hex) {
   const value = parseInt(hex.slice(1), 16);
   return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
@@ -231,13 +244,13 @@ class Stage {
   frameOn(frame) {
     this.framing = frame;
     this.controls.target.copy(frame.centre);
-    this.controls.minDistance = frame.radius * 1.3;
+    this.controls.minDistance = frame.radius * (frame.half ? 0.6 : 1.3);
     this.controls.maxDistance = frame.radius * 6;
   }
 
   aim(azimuth, elevation) {
-    const { centre, radius } = this.framing;
-    const distance = (radius / Math.sin((this.camera.fov * Math.PI) / 360)) * 1.12;
+    const { centre, radius, half } = this.framing;
+    const distance = half ? boxDistance(half, azimuth, elevation, this.camera) : (radius / Math.sin((this.camera.fov * Math.PI) / 360)) * 1.12;
     this.camera.position.setFromSphericalCoords(distance, Math.PI / 2 - elevation, azimuth).add(centre);
     this.controls.update();
   }
@@ -265,9 +278,19 @@ class Stage {
     this.width = width;
     this.height = height;
     this.renderer.setSize(width, height, false);
+    // A row fitted to its box fits for one aspect: a new one scales the distance, keeping any zoom.
+    const fitted = this.framing?.half && this.rowDistance();
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
+    if (fitted) {
+      this.camera.position.sub(this.controls.target).multiplyScalar(this.rowDistance() / fitted).add(this.controls.target);
+      this.controls.update();
+    }
     this.invalidate();
+  }
+
+  rowDistance() {
+    return boxDistance(this.framing.half, this.controls.getAzimuthalAngle(), Math.PI / 2 - this.controls.getPolarAngle(), this.camera);
   }
 
   async setView(view) {
@@ -355,7 +378,8 @@ class Stage {
   rowFrame({ low, high }) {
     const deepest = Math.max(...this.printPlates.map((plate) => plate.pad));
     const height = Math.max(this.size[2], ...this.printPlates.map((plate) => plate.height));
-    return { centre: new THREE.Vector3((low + high) / 2, height / 2, 0), radius: Math.hypot(high - low, deepest, height) / 2 };
+    const half = [(high - low) / 2, height / 2, deepest / 2];
+    return { centre: new THREE.Vector3((low + high) / 2, height / 2, 0), radius: Math.hypot(...half), half };
   }
 
   // Every plate's bed is there from the start, so the plates still to come show as empty beds.
