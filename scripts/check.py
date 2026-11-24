@@ -264,6 +264,8 @@ def main() -> int:
         failures: list[str] = list(problems.get(part["_dir"].name, []))
         if part["id"] != part["_dir"].name:
             failures.append(f"part.json id {part['id']} does not match its folder")
+        plate_problems = ws.plate_problems(part)
+        failures.extend(plate_problems)
         with tempfile.TemporaryDirectory() as folder, ThreadPoolExecutor(os.cpu_count() or 4) as pool:
             tmp = Path(folder)
             result = {"id": part["id"], "openscad": version, "exports": check_exports(part, tmp, pool, failures),
@@ -274,7 +276,7 @@ def main() -> int:
             results_file.unlink(missing_ok=True)
             if not failures:
                 results_file.write_text(json.dumps(result, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
-            if part.get("published"):
+            if part.get("published") and not plate_problems:
                 check_published(part, result, tmp, failures)
         for failure in failures:
             print(f"FAIL {part['id']}: {failure}")

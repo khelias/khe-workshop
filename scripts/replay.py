@@ -292,7 +292,7 @@ def parse(text: str, last_layer: int, first_layer: int = 1, tolerance: float = T
         "settings": {"material": setting(text, "filament_type"), "layer_height": setting(text, "layer_height"),
                      "infill": setting(text, "sparse_infill_density"), "walls": setting(text, "wall_loops"),
                      "supports": setting(text, "enable_support") == "1"},
-        "filament_g": round(sum(float(value) for value in filament.group(1).split(",")), 1) if filament else None,
+        "filament_g": round(sum(float(value) for value in filament.group(1).split(",")), 2) if filament else None,
         "scale": SCALE, "records": len(records.kinds), "kinds": KINDS, "layers": layers,
         "total_layers": int(total_match.group(1)) if total_match else last_layer,
         "seconds": round(end, 1), "colour": colour_of(start_tool or 0),
@@ -331,6 +331,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("gcode", type=Path)
     parser.add_argument("--part", help="part id: reads its replay settings from part.json, writes build/replay/<id>.bin.gz")
+    parser.add_argument("--plate", help="plate id, for a part printed on several plates: writes build/replay/<part>-<plate>.bin.gz")
     parser.add_argument("--last-layer", type=int)
     parser.add_argument("--first-layer", type=int)
     parser.add_argument("--tolerance", type=float, help="how far, in 1/100 mm, a merged run may bend")
@@ -342,11 +343,19 @@ def main() -> int:
         part = next((item for item in ws.load_parts() if item["id"] == args.part), None)
         if part is None:
             parser.error(f"no part named {args.part}")
-        first, last = layer_span(part["replay"])
+        plates = ws.plates_or_exit(part)
+        plate = next((item for item in plates if item["id"] == args.plate), None)
+        if plate is None:
+            ids = [item["id"] for item in plates if item["id"]]
+            parser.error(f"{args.part} is printed on plates, give --plate: {', '.join(ids)}" if ids
+                         else f"{args.part} has no plates, leave out --plate")
+        first, last = layer_span(plate)
         first_layer = first if first_layer is None else first_layer
         last_layer = last if last_layer is None else last_layer
-        tolerance = part["replay"].get("tolerance", TOLERANCE) if tolerance is None else tolerance
-        out = out or ws.REPLAYS / f"{args.part}.bin.gz"
+        tolerance = plate.get("tolerance", TOLERANCE) if tolerance is None else tolerance
+        out = out or ws.replay_path(part, plate)
+    elif args.plate:
+        parser.error("--plate needs --part")
     if last_layer is None or not out:
         parser.error("give --part, or both --last-layer and --out")
     first_layer = 1 if first_layer is None else first_layer

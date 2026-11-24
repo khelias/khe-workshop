@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { buildToolpaths, decodeReplay, formatDuration, layerAt, parseReplay, secondsToSlider, sliderToSeconds, verticesAt } from '../src/replay.js';
+import { buildToolpaths, decodeReplay, formatDuration, layerAt, parseReplay, plateAt, rowLayout, timeline, turnedBox, verticesAt } from '../src/replay.js';
 import { parseStl, placeOnBed } from '../src/stl.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -124,16 +124,50 @@ test('toolpaths are centred on the walls and turned as printed', async () => {
 
 test('the slider maps time to the layer being printed', () => {
   const layers = [[0.2, 0, 100], [0.4, 10, 1100], [0.6, 20, 2100]];
-  assert.equal(sliderToSeconds(500, 1000, 3100), 1550);
-  assert.equal(sliderToSeconds(0, 1000, 22802, 1923), 1923, 'a replay from layer 4 starts at its first layer');
-  assert.equal(sliderToSeconds(1000, 1000, 22802, 1923), 22802);
-  assert.equal(secondsToSlider(sliderToSeconds(250, 1000, 22802, 1923), 1000, 22802, 1923), 250);
+  assert.deepEqual(plateAt([[0, 3100]], 500, 1000), { plate: 0, seconds: 1550 });
+  assert.deepEqual(plateAt([[1923, 22802]], 0, 1000), { plate: 0, seconds: 1923 }, 'a replay from layer 4 starts at its first layer');
+  assert.deepEqual(plateAt([[1923, 22802]], 1000, 1000), { plate: 0, seconds: 22802 });
   assert.deepEqual(layerAt(layers, 3100, 0), { index: 0, fraction: 0 });
   assert.deepEqual(layerAt(layers, 3100, 600), { index: 0, fraction: 0.5 });
   assert.deepEqual(layerAt(layers, 3100, 1100), { index: 1, fraction: 0 });
   assert.deepEqual(layerAt(layers, 3100, 3100), { index: 2, fraction: 1 });
   assert.deepEqual(layerAt(layers, 3100, 9999), { index: 2, fraction: 1 });
   assert.deepEqual(verticesAt(new Uint32Array([0, 10, 30, 40]), { index: 1, fraction: 0.5 }), { start: 10, upTo: 20 });
+});
+
+test('one slider runs through the plates one after another', () => {
+  // Replayed spans of 100, 300 and 600 s, the first starting at its first layer's 20 s.
+  const spans = [[20, 120], [0, 300], [50, 650]];
+  assert.deepEqual(timeline(spans), { lengths: [100, 300, 600], before: [0, 100, 400], total: 1000 });
+  assert.deepEqual(plateAt(spans, 0, 1000), { plate: 0, seconds: 20 });
+  assert.deepEqual(plateAt(spans, 50, 1000), { plate: 0, seconds: 70 });
+  assert.deepEqual(plateAt(spans, 100, 1000), { plate: 1, seconds: 0 }, 'a boundary starts the next plate');
+  assert.deepEqual(plateAt(spans, 400, 1000), { plate: 2, seconds: 50 });
+  for (const [index, seconds] of timeline(spans).before.entries()) assert.deepEqual(plateAt(spans, seconds / 1000), { plate: index, seconds: spans[index][0] });
+  assert.deepEqual(plateAt(spans, 900, 1000), { plate: 2, seconds: 550 });
+  assert.deepEqual(plateAt(spans, 1000, 1000), { plate: 2, seconds: 650 });
+  assert.deepEqual(plateAt(spans, 1200, 1000), { plate: 2, seconds: 650 }, 'past the end is the end');
+});
+
+test('finished plates stand in a row clear of each other and of the plate printing', () => {
+  const cases = [
+    [turnedBox([73.44, 89.7, 186.58, 170.32], 0), turnedBox([95.31, 100.31, 164.69, 159.69], 0), turnedBox([95.31, 100.31, 164.69, 159.69], 0)],
+    [turnedBox([58.11, 48.96, 201.89, 211.04], 90), turnedBox([42.22, 42.22, 217.78, 217.78], 90)],
+    [[10, 10], [200, 40], [30, 30], [5, 5]],
+  ];
+  assert.deepEqual(turnedBox([0, 0, 40, 10], 90).map(Math.round), [10, 40]);
+  for (const boxes of cases) {
+    const { offsets, end } = rowLayout(boxes);
+    assert.equal(offsets.length, boxes.length - 1, 'the last plate is never in the row');
+    const spans = offsets.map((offset, index) => [offset - boxes[index][0] / 2, offset + boxes[index][0] / 2]);
+    const centreHalf = Math.max(...boxes.map(([width]) => width)) / 2;
+    spans.forEach(([low], index) => {
+      assert.ok(low > centreHalf, `plate ${index} in the row is clear of any plate at the centre`);
+      if (index) assert.ok(low > spans[index - 1][1], `plate ${index} is clear of plate ${index - 1}`);
+    });
+    assert.equal(end, spans.at(-1)[1], 'the row ends at its last plate');
+  }
+  assert.deepEqual(rowLayout([[40, 40]]), { offsets: [], end: 20 }, 'one plate has no row');
 });
 
 test('durations read in hours and minutes', () => {

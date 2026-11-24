@@ -12,6 +12,7 @@ import datetime
 import functools
 import html
 import json
+import math
 import posixpath
 import re
 import shutil
@@ -47,15 +48,18 @@ TEXT = {
         "result": "Tulemus",
         "passed": "{n} katset läbitud", "failed": "Katse ebaõnnestus",
         "closed": "{name}: suletud kuju, mahub printeri {bed} mm alusele.",
+        "closed_many": "{n} faili on suletud kujuga ja mahuvad printeri {bed} mm alusele.",
         "open": "{name}: mahub printeri {bed} mm alusele. {reason}",
         "nowebgl": "Kolmemõõtmeline vaade vajab JavaScripti ja WebGL-i, mida see brauser ei paku.",
         "photo": "Foto prinditud detailist", "download": "Laadi alla", "printed": "Prinditud {date}.",
         "terms": {"CC-BY-4.0": "Võid seda kasutada, muuta ja jagada, kui nimetad autori.",
                   "CC-BY-NC-4.0": "Võid seda kasutada, muuta ja jagada, kui nimetad autorid, aga mitte ärilisel eesmärgil."},
-        "colour_change": "Värvivahetus",
+        "plate": "Plaat", "total": "Kokku", "plates_row": "{n} plaati, {time}", "tests": "Sobivusproovid",
         "stage": {"play": "Mängi", "pause": "Paus", "loading": "Laen prinditööd", "loading_parts": "Laen osi", "error": "Vaadet ei õnnestunud laadida.",
                   "turned": "Pööratud {deg}°", "cut": "Lõige {mm} mm keskjoonest",
-                  "print": "{time}, kiht {layer} / {total}",
+                  "print": "{time}, kiht {layer} / {layers}",
+                  "print_plates": "{time} / {total}, plaat {plate}/{plates}, kiht {layer}/{layers}",
+                  "plate_mark": "Uus plaat", "colour_change": "Värvivahetus",
                   "apart": "Lahti {pct}%",
                   "slider": {"model": "Pööra detaili", "cut": "Liiguta lõiget", "print": "Keri printimise aega", "parts": "Võta osadeks"}},
     },
@@ -72,19 +76,37 @@ TEXT = {
         "result": "Result",
         "passed": "{n} tests passed", "failed": "A test failed",
         "closed": "{name}: a closed solid that fits the printer's {bed} mm bed.",
+        "closed_many": "{n} files are closed solids that fit the printer's {bed} mm bed.",
         "open": "{name}: fits the printer's {bed} mm bed. {reason}",
         "nowebgl": "The 3D view needs JavaScript and WebGL, which this browser does not offer.",
         "photo": "A photo of the printed part", "download": "Download", "printed": "Printed {date}.",
         "terms": {"CC-BY-4.0": "You may use, change and share it if you credit the author.",
                   "CC-BY-NC-4.0": "You may use, change and share it if you credit the authors, but not commercially."},
-        "colour_change": "Colour change",
+        "plate": "Plate", "total": "Total", "plates_row": "{n} plates, {time}", "tests": "Fit tests",
         "stage": {"play": "Play", "pause": "Pause", "loading": "Loading the print", "loading_parts": "Loading the parts", "error": "The view could not be loaded.",
                   "turned": "Turned {deg}°", "cut": "Cut {mm} mm from the centre",
-                  "print": "{time}, layer {layer} of {total}",
+                  "print": "{time}, layer {layer} of {layers}",
+                  "print_plates": "{time} of {total}, plate {plate}/{plates}, layer {layer}/{layers}",
+                  "plate_mark": "Next plate", "colour_change": "Colour change",
                   "apart": "{pct}% apart",
                   "slider": {"model": "Turn the part", "cut": "Move the cut", "print": "Scrub through the print", "parts": "Take the part apart"}},
     },
 }
+
+
+def stage_text(lang: str, plates: int) -> dict:
+    """The stage's strings, with the readout for one plate or for several as `print`."""
+    text = dict(TEXT[lang]["stage"])
+    plates_text = text.pop("print_plates")
+    if plates > 1:
+        text["print"] = plates_text
+    return text
+
+
+def totals(metas: list[tuple[dict, dict]]) -> tuple[float, float | None]:
+    """The plates' print time and filament together, summed before rounding."""
+    grams = [meta.get("filament_g") for _, meta in metas]
+    return math.fsum(meta["print_seconds"] for _, meta in metas), math.fsum(grams) if all(grams) else None
 
 
 def esc(value: object) -> str:
@@ -160,7 +182,7 @@ class Site:
         for part in ws.load_parts():
             if not (preview or part.get("published")):
                 continue
-            if not part.get("published") and not (ws.REPLAYS / f"{part['id']}.bin.gz").exists():
+            if not part.get("published") and not all(ws.replay_path(part, plate).exists() for plate in ws.plates(part)):
                 print(f"note: {part['id']} is left out, it has no replay data yet")
                 continue
             self.parts.append(part)
@@ -198,16 +220,21 @@ class Site:
             raise SystemExit(f"FAIL {part['id']}: no check results, run scripts/check.py first")
         return json.loads(path.read_text(encoding="utf-8"))
 
-    def replay_file(self, part: dict) -> Path:
-        path = part["_dir"] / "published" / "replay.bin.gz" if part.get("published") else ws.REPLAYS / f"{part['id']}.bin.gz"
+    def replay_file(self, part: dict, plate: dict) -> Path:
+        path = ws.published_replay(part, plate) if part.get("published") else ws.replay_path(part, plate)
         if not path.exists():
-            raise SystemExit(f"FAIL {part['id']}: no replay data, run scripts/replay.py first")
+            raise SystemExit(f"FAIL {part['id']}: no replay data for {path.name}, run scripts/replay.py first")
         return path
+
+    def plate_metas(self, part: dict) -> list[tuple[dict, dict]]:
+        """Each plate with its replay's metadata, in print order."""
+        return [(plate, replay_meta(self.replay_file(part, plate))) for plate in ws.plates(part)]
 
     def copy_data(self, part: dict) -> None:
         folder = self.out / "data" / part["id"]
         folder.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(self.replay_file(part), folder / "replay.bin.gz")
+        for plate in ws.plates(part):
+            shutil.copyfile(self.replay_file(part, plate), folder / ws.published_replay(part, plate).name)
         photo = photo_name(part)
         if photo:
             shutil.copyfile(part["_dir"] / "published" / photo, folder / photo)
@@ -260,13 +287,18 @@ class Site:
         depth = prefix.count("/")
         rows = []
         for part in self.parts:
-            meta = replay_meta(self.replay_file(part))
+            metas = self.plate_metas(part)
             href = self.link(depth, f"{prefix}{part['id']}/")
-            layer_unit = t["layers_one"] if meta["total_layers"] == 1 else t["layers_many"]
-            facts = f"{meta['total_layers']} {layer_unit}, {duration(meta['print_seconds'])}"
+            if len(metas) > 1:
+                facts = t["plates_row"].format(n=len(metas), time=duration(totals(metas)[0]))
+            else:
+                meta = metas[0][1]
+                layer_unit = t["layers_one"] if meta["total_layers"] == 1 else t["layers_many"]
+                facts = f"{meta['total_layers']} {layer_unit}, {duration(meta['print_seconds'])}"
+            shown_plate = ws.stage_plate(part) or metas[0][0]
             rows.append(f"""<li class="row">
 <a class="row__link" href="{href}">
-{outline(self.replay_file(part))}
+{outline(self.replay_file(part, shown_plate))}
 <span class="row__text">
 <span class="row__title">{esc(part['title'][lang])}</span>
 <span class="row__summary">{esc(part['summary'][lang])}</span>
@@ -283,7 +315,7 @@ class Site:
 </header>
 <div class="hero__stage">
 <p class="label"><a href="{shown_href}">{esc(shown['title'][lang])}</a></p>
-{self.stage(shown, lang, depth, replay_meta(self.replay_file(shown)), initial="print")}
+{self.stage(shown, lang, depth, self.plate_metas(shown), initial="print")}
 </div>
 </section>
 <ul class="rows">
@@ -297,33 +329,45 @@ class Site:
             return ""
         return f'<img src="{esc(self.data_link(part, depth, photo))}" alt="{TEXT[lang]["photo"]}" loading="lazy">'
 
-    def stage(self, part: dict, lang: str, depth: int, meta: dict, initial: str = "model") -> str:
-        t = TEXT[lang]
-        files = {item["id"]: item["file"] for item in part["exports"]}
+    def stage_plate_config(self, part: dict, plate: dict, meta: dict, lang: str, depth: int) -> dict:
+        """What the stage draws with the stage plate only: the top printed after its replay, the
+        layers printed below it and the inlay."""
         first = meta.get("first_layer", 1)
         last = first + len(meta["layers"]) - 1
+        extra = {}
         after = [change for change in meta["colour_changes"] if change["layer"] > last]
-        top = None
         if after:
             # What was printed after the replay's last layer, in its own colour.
-            top = {"above": meta["layers"][-1][0] + 0.05, "colour": after[0]["colour"],
-                   "label": part["replay"]["after_label"][lang]}
-        below = inlay = None
+            extra["top"] = {"above": meta["layers"][-1][0] + 0.05, "colour": after[0]["colour"],
+                            "label": plate["after_label"][lang]}
         printed_below = meta.get("below")
         if printed_below:
             # What was printed under the replay's first layer, shown by the model instead.
-            if "before_label" not in part["replay"]:
-                raise SystemExit(f"FAIL {part['id']}: a replay that starts above layer 1 needs replay.before_label")
-            below = {"z": printed_below["z"], "label": part["replay"]["before_label"][lang]}
+            if "before_label" not in plate:
+                raise SystemExit(f"FAIL {part['id']}: a replay that starts above layer 1 needs before_label")
+            extra["below"] = {"z": printed_below["z"], "label": plate["before_label"][lang]}
         if part.get("stage_inlay"):
             if not printed_below:
                 raise SystemExit(f"FAIL {part['id']}: stage_inlay takes its colour from a replay that starts above layer 1")
-            inlay = {"stl": self.data_link(part, depth, files[part["stage_inlay"]]), "colour": printed_below["colour"]}
+            inlay = next(item["file"] for item in part["exports"] if item["id"] == part["stage_inlay"])
+            extra["inlay"] = {"stl": self.data_link(part, depth, inlay), "colour": printed_below["colour"]}
+        return extra
+
+    def stage(self, part: dict, lang: str, depth: int, metas: list[tuple[dict, dict]], initial: str = "model") -> str:
+        t = TEXT[lang]
+        files = {item["id"]: item["file"] for item in part["exports"]}
+        plates = []
+        for plate, meta in metas:
+            entry = {"replay": self.data_link(part, depth, ws.published_replay(part, plate).name),
+                     "colour": plate.get("colour") or meta["colour"], "rotate": plate["rotate_deg"],
+                     "first": meta.get("first_layer", 1),
+                     "title": (plate.get("title") or part["title"])[lang], "stage": bool(plate.get("stage"))}
+            if entry["stage"]:
+                entry.update(self.stage_plate_config(part, plate, meta, lang, depth))
+            plates.append(entry)
         config = {
             "lang": lang, "stl": self.data_link(part, depth, files[part["stage_export"]]),
-            "replay": self.data_link(part, depth, "replay.bin.gz"),
-            "rotate": part["replay"]["rotate_deg"], "colour": meta["colour"], "first": first,
-            "top": top, "below": below, "inlay": inlay, "bed": ws.BED_MM, "text": t["stage"],
+            "plates": plates, "bed": ws.BED_MM, "text": stage_text(lang, len(plates)),
         }
         if initial != "model":
             config["initial"] = initial
@@ -349,7 +393,6 @@ class Site:
 <div class="stage__tabs" role="group" aria-label="{t['views']}">{tabs}</div>
 <div class="stage__timeline">
 <input class="stage__slider" data-stage-slider type="range" min="0" max="1000" step="1" value="0">
-<span class="stage__mark" data-stage-mark title="{t['colour_change']}" hidden></span>
 </div>
 <div class="stage__foot">
 <output class="stage__readout" data-stage-readout></output>
@@ -365,9 +408,14 @@ class Site:
         titles = {item["id"]: item["title"][lang] for item in part["exports"]}
         reason = part.get("allowed_nonmanifold_reason") or {}
         bed = f"{ws.BED_MM:.0f}"
+        closed = [export for export in results["exports"] if not export["nonmanifold_edges"]]
+        if len(closed) > 1:
+            lines.append(f"<li>{esc(t['closed_many'].format(n=len(closed), bed=bed))}</li>")
+        elif closed:
+            lines.append(f"<li>{esc(t['closed'].format(name=titles[closed[0]['id']], bed=bed))}</li>")
         for export in results["exports"]:
-            template = t["open"] if export["nonmanifold_edges"] else t["closed"]
-            lines.append(f"<li>{esc(template.format(name=titles[export['id']], reason=reason.get(lang, ''), bed=bed))}</li>")
+            if export["nonmanifold_edges"]:
+                lines.append(f"<li>{esc(t['open'].format(name=titles[export['id']], reason=reason.get(lang, ''), bed=bed))}</li>")
         table = ""
         if results["probes"]:
             probes = part["probes"]
@@ -394,31 +442,66 @@ class Site:
 <ul class="checks">{''.join(lines)}</ul>
 </section>"""
 
+    def plate_table(self, part: dict, metas: list[tuple[dict, dict]], lang: str) -> str:
+        """A row per plate and the total, summed before rounding."""
+        t = TEXT[lang]
+        rows = []
+        for plate, meta in metas:
+            colour = plate.get("colour") or meta["colour"]
+            grams = meta.get("filament_g")
+            rows.append(f'<tr><th scope="row"><span class="swatch" style="--swatch: {esc(colour)}" aria-hidden="true"></span>{esc(plate["title"][lang])}</th>'
+                        f'<td class="fact">{meta["total_layers"]}</td><td class="fact">{duration(meta["print_seconds"])}</td>'
+                        f'<td class="fact">{f"{number(grams, lang, 0)} g" if grams else ""}</td></tr>')
+        seconds, grams = totals(metas)
+        total_grams = f"{number(grams, lang, 0)} g" if grams else ""
+        rows.append(f'<tr><th scope="row">{t["total"]}</th><td></td><td class="fact">{duration(seconds)}</td><td class="fact">{total_grams}</td></tr>')
+        return f"""<div class="table">
+<table>
+<thead><tr><th scope="col">{t['plate']}</th><th scope="col">{t['layers']}</th><th scope="col">{t['time']}</th><th scope="col">{t['filament']}</th></tr></thead>
+<tbody>{''.join(rows)}</tbody>
+</table>
+</div>
+"""
+
     def part_page(self, part: dict, lang: str) -> str:
         t = TEXT[lang]
         prefix = PREFIX[lang]
         depth = 1 + prefix.count("/")
-        meta = replay_meta(self.replay_file(part))
+        metas = self.plate_metas(part)
         results = self.results(part)
         stage_result = next(item for item in results["exports"] if item["id"] == part["stage_export"])
         size = " x ".join(number(value, lang) for value in stage_result["size_mm"])
-        facts = [(t["size"], f"{size} mm"), (t["layers"], str(meta["total_layers"])), (t["time"], duration(meta["print_seconds"]))]
-        if meta.get("filament_g"):
-            facts.append((t["filament"], f"{number(meta['filament_g'], lang, 0)} g"))
-        settings = meta["settings"]
-        height = settings["layer_height"]
-        facts += [(t["material"], settings["material"]),
-                  (t["layer_height"], f"{number(float(height), lang)} mm" if height else None),
-                  (t["infill"], settings["infill"]), (t["walls"], settings["walls"]),
-                  (t["supports"], t["yes"] if settings["supports"] else t["no"])]
+        facts = [(t["size"], f"{size} mm")]
+        plate_table = ""
+        if len(metas) > 1:
+            plate_table = self.plate_table(part, metas, lang)
+        else:
+            meta = metas[0][1]
+            facts += [(t["layers"], str(meta["total_layers"])), (t["time"], duration(meta["print_seconds"]))]
+            if meta.get("filament_g"):
+                facts.append((t["filament"], f"{number(meta['filament_g'], lang, 0)} g"))
+
+        def shared(key: str, show=lambda value: value) -> str:
+            """A setting once when every plate shares it, else each distinct value."""
+            return ", ".join(dict.fromkeys(filter(None, (show(meta["settings"][key]) for _, meta in metas))))
+        facts += [(t["material"], shared("material")),
+                  (t["layer_height"], shared("layer_height", lambda height: f"{number(float(height), lang)} mm" if height else None)),
+                  (t["infill"], shared("infill")), (t["walls"], shared("walls")),
+                  (t["supports"], shared("supports", lambda supports: t["yes"] if supports else t["no"]))]
         fact_rows = "".join(f'<div><dt>{esc(name)}</dt><dd class="fact">{esc(value)}</dd></div>' for name, value in facts if value)
         photo = self.photo(part, lang, depth)
         photo_html = f'<figure class="photo">{photo}</figure>' if photo else ""
-        note = part["replay"].get("note")
-        note_html = f'<p class="note">{esc(note[lang])}</p>' if note else ""
-        files = "".join(f'<li><a href="{esc(self.data_link(part, depth, item["file"]))}" download>{esc(item["title"][lang])}</a> <span class="fact">STL</span></li>'
-                        for item in part["exports"])
+        note_html = "".join(f'<p class="note">{esc(plate["note"][lang])}</p>' for plate, _ in metas if plate.get("note"))
+
+        def file_items(exports) -> str:
+            return "".join(f'<li><a href="{esc(self.data_link(part, depth, item["file"]))}" download>{esc(item["title"][lang])}</a> <span class="fact">STL</span></li>'
+                           for item in exports)
+        tests = [item for item in part["exports"] if item.get("test")]
+        files = file_items(item for item in part["exports"] if not item.get("test"))
         files += f'<li><a href="{SOURCE_URL}/{part["id"]}/{esc(part["source"])}">{t["source"]}</a></li>'
+        files_html = f'<ul class="files">{files}</ul>'
+        if tests:
+            files_html += f'\n<h3>{t["tests"]}</h3>\n<ul class="files">{file_items(tests)}</ul>'
         name, url = LICENCES[part["licence"]]
         credit = part.get("credit")
         credit_html = ""
@@ -432,7 +515,7 @@ class Site:
 <p class="lead">{esc(part['summary'][lang])}</p>
 <p class="room__action"><a class="button" href="#files">{t['download']}</a></p>
 </header>
-{self.stage(part, lang, depth, meta)}
+{self.stage(part, lang, depth, metas)}
 </section>
 {note_html}
 <div class="blocks">
@@ -445,11 +528,11 @@ class Site:
 {self.proof(part, lang)}
 <section class="block">
 <h2>{t['facts']}</h2>
-<dl class="facts">{fact_rows}</dl>
+{plate_table}<dl class="facts">{fact_rows}</dl>
 </section>
 <section class="block" id="files">
 <h2>{t['files']}</h2>
-<ul class="files">{files}</ul>
+{files_html}
 <p>{t['licence']}: <a href="{url}">{name}</a>. {t['terms'][part['licence']]}</p>
 {credit_html}
 </section>

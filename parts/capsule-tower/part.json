@@ -26,15 +26,19 @@
   ],
   "stage_export": "tower",
   "allowed_nonmanifold_edges": 0,
-  "replay": {
-    "last_layer": 1238,
-    "rotate_deg": 90,
-    "after_label": { "et": "valge tempel", "en": "stamp in white" },
-    "note": {
-      "et": "Siin on päris prinditöö kuni kihini 1238. Viimased neli kihti olid pere oma tempel, need jäid välja ja nende asemel on avalik tempel.",
-      "en": "The replay is the real print up to layer 1238. The last four layers were the family's own stamp, so they are left out and the public stamp appears instead."
-    }
-  },
+  "plates": [
+    {
+      "id": "tower", "title": { "et": "Torn", "en": "Tower" }, "stage": true,
+      "last_layer": 1238,
+      "rotate_deg": 90,
+      "after_label": { "et": "valge tempel", "en": "stamp in white" },
+      "note": {
+        "et": "Siin on päris prinditöö kuni kihini 1238. Viimased neli kihti olid pere oma tempel, need jäid välja ja nende asemel on avalik tempel.",
+        "en": "The replay is the real print up to layer 1238. The last four layers were the family's own stamp, so they are left out and the public stamp appears instead."
+      }
+    },
+    { "id": "base", "title": { "et": "Alus", "en": "Base" }, "last_layer": 210, "rotate_deg": 90 }
+  ],
   "probes": {
     "variant_heading": { "et": "Kapsel", "en": "Capsule" },
     "value_heading": { "et": "Vaba ruumi küljel", "en": "Side clearance" },

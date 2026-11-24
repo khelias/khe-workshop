@@ -273,6 +273,14 @@ def _number(value: object) -> bool:
     return type(value) in (int, float)
 
 
+def _bilingual(value: object) -> bool:
+    return isinstance(value, dict) and bool(value.get("et")) and bool(value.get("en"))
+
+
+def _colour(value: object) -> bool:
+    return bool(re.fullmatch(r"#[0-9a-fA-F]{6}", str(value)))
+
+
 def _path_ok(path: object) -> bool:
     """Rows of [t, dx, dy, dz], t rising from 0 to 1."""
     if not (isinstance(path, list) and len(path) >= 2
@@ -290,8 +298,7 @@ def assembly_problems(part: dict) -> list[str]:
     if not isinstance(assembly, dict):
         return ["assembly is an object with label, start and items"]
     problems = []
-    label = assembly.get("label") or {}
-    if not (isinstance(label, dict) and label.get("et") and label.get("en")):
+    if not _bilingual(assembly.get("label")):
         problems.append("assembly.label needs et and en")
     if not (_number(assembly.get("start")) and 0 <= assembly["start"] <= 1):
         problems.append("assembly.start is a number from 0 to 1")
@@ -309,10 +316,76 @@ def assembly_problems(part: dict) -> list[str]:
             problems.append(f"assembly item {name}: give either export or defines")
         elif "export" in item and item["export"] not in exports:
             problems.append(f"assembly item {name}: no export {item['export']!r}")
-        if not re.fullmatch(r"#[0-9a-fA-F]{6}", str(item.get("colour"))):
+        if not _colour(item.get("colour")):
             problems.append(f"assembly item {name}: colour is #rrggbb")
         if "path" in item and not _path_ok(item["path"]):
             problems.append(f"assembly item {name}: path rows are [t, dx, dy, dz], t rising from 0 to 1")
+    return problems
+
+
+STAGE_ONLY = ("before_label", "after_label")
+
+
+def plates(part: dict) -> list[dict]:
+    """The plates a part was printed on, in print order. A part without `plates` is one stage
+    plate made from its `replay`."""
+    if "plates" in part:
+        return part["plates"]
+    return [{"id": None, "stage": True, **part["replay"]}]
+
+
+def replay_path(part: dict, plate: dict) -> Path:
+    name = f"{part['id']}-{plate['id']}" if plate["id"] else part["id"]
+    return REPLAYS / f"{name}.bin.gz"
+
+
+def published_replay(part: dict, plate: dict) -> Path:
+    name = f"replay-{plate['id']}" if plate["id"] else "replay"
+    return part["_dir"] / "published" / f"{name}.bin.gz"
+
+
+def plates_or_exit(part: dict) -> list[dict]:
+    """The plates, for a tool that uses them before the check has looked at them."""
+    problems = plate_problems(part)
+    if problems:
+        raise SystemExit(f"FAIL {part['id']}: {'; '.join(problems)}")
+    return plates(part)
+
+
+def stage_plate(part: dict) -> dict | None:
+    return next((plate for plate in plates(part) if plate.get("stage")), None)
+
+
+def plate_problems(part: dict) -> list[str]:
+    """What is wrong with the shape of a part's plates."""
+    listed = part.get("plates")
+    if listed is None:
+        return []
+    if not (isinstance(listed, list) and listed and all(isinstance(plate, dict) for plate in listed)):
+        return ["plates is a list of objects"]
+    problems = []
+    if "replay" in part:
+        problems.append("give either replay or plates, not both")
+    seen = set()
+    for plate in listed:
+        name = plate.get("id")
+        if not (isinstance(name, str) and re.fullmatch(r"[a-z0-9-]+", name)) or name in seen:
+            problems.append(f"plate {name!r} needs an id of its own in a-z, 0-9 and -")
+        seen.add(name)
+        if not _bilingual(plate.get("title")):
+            problems.append(f"plate {name}: title needs et and en")
+        if "colour" in plate and not _colour(plate["colour"]):
+            problems.append(f"plate {name}: colour is #rrggbb")
+        if not isinstance(plate.get("last_layer"), int):
+            problems.append(f"plate {name}: last_layer is a layer number")
+        if not _number(plate.get("rotate_deg")):
+            problems.append(f"plate {name}: rotate_deg is a number")
+        if not plate.get("stage") and any(key in plate for key in STAGE_ONLY):
+            problems.append(f"plate {name}: before_label and after_label belong to the stage plate")
+    if sum(bool(plate.get("stage")) for plate in listed) > 1:
+        problems.append("at most one plate is the stage plate")
+    if part.get("stage_inlay") and not any(plate.get("stage") for plate in listed):
+        problems.append("stage_inlay needs a stage plate")
     return problems
 
 
@@ -328,7 +401,9 @@ def read_published(part: dict, name: str) -> dict | None:
 def published_problems(part: dict) -> list[str]:
     """What is wrong with a published part's files and proof, read with the standard library only."""
     folder = part["_dir"] / "published"
-    problems = []
+    problems = plate_problems(part)
+    if problems:
+        return problems
     build = read_published(part, "build.json")
     if build is None:
         return ["published/build.json is missing or unreadable; run scripts/build.py"]
@@ -352,22 +427,23 @@ def published_problems(part: dict) -> list[str]:
         valid_date = False
     if not valid_date:
         problems.append("proof.printed is not a YYYY-MM-DD date")
-    use = proof.get("use") or {}
-    if not (isinstance(use, dict) and use.get("et") and use.get("en")):
+    if not _bilingual(proof.get("use")):
         problems.append("proof.use needs a sentence in et and en")
     if proof.get("photo") and not (folder / proof["photo"]).exists():
         problems.append(f"proof photo published/{proof['photo']} is missing")
-    replay_file = folder / "replay.bin.gz"
-    if not replay_file.exists():
-        problems.append("published/replay.bin.gz is missing")
-    else:
+    for plate in plates(part):
+        replay_file = published_replay(part, plate)
+        name = f"published/{replay_file.name}"
+        if not replay_file.exists():
+            problems.append(f"{name} is missing")
+            continue
         try:
             meta = replay_format.read_meta(replay_file)
             layers, starts = len(meta["layers"]), meta.get("first_layer", 1)
         except (OSError, EOFError, ValueError, KeyError) as broken:
-            problems.append(f"published/replay.bin.gz cannot be read: {broken}")
-        else:
-            first, last = replay_format.layer_span(part["replay"])
-            if starts != first or layers != last - first + 1:
-                problems.append(f"the replay runs from layer {starts} over {layers} layers, it must run from {first} to {last}")
+            problems.append(f"{name} cannot be read: {broken}")
+            continue
+        first, last = replay_format.layer_span(plate)
+        if starts != first or layers != last - first + 1:
+            problems.append(f"{name} runs from layer {starts} over {layers} layers, it must run from {first} to {last}")
     return problems

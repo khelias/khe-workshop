@@ -25,9 +25,9 @@
     { "id": "base", "file": "soma-egg-base.stl", "defines": { "mode": "base", "steps": 32, "rib_slices": 24 }, "title": { "et": "Alus", "en": "Base" } },
     { "id": "cap", "file": "soma-egg-cap.stl", "defines": { "mode": "cap", "steps": 32, "rib_slices": 24 }, "title": { "et": "Kork", "en": "Cap" } },
     { "id": "pieces", "file": "soma-egg-pieces.stl", "defines": { "mode": "pieces" }, "title": { "et": "Seitse tükki", "en": "Seven pieces" } },
-    { "id": "test-base", "file": "soma-egg-test-base.stl", "defines": { "mode": "test_base" }, "title": { "et": "Sobivusproov: alusrõngas", "en": "Fit test: base ring" } },
-    { "id": "test-cap", "file": "soma-egg-test-cap.stl", "defines": { "mode": "test_cap" }, "title": { "et": "Sobivusproov: korgirõngas", "en": "Fit test: cap ring" } },
-    { "id": "test-piece", "file": "soma-egg-test-piece.stl", "defines": { "mode": "test_piece" }, "title": { "et": "Sobivusproov: tükk", "en": "Fit test: piece" } }
+    { "id": "test-base", "file": "soma-egg-test-base.stl", "defines": { "mode": "test_base" }, "test": true, "title": { "et": "Alusrõngas", "en": "Base ring" } },
+    { "id": "test-cap", "file": "soma-egg-test-cap.stl", "defines": { "mode": "test_cap" }, "test": true, "title": { "et": "Korgirõngas", "en": "Cap ring" } },
+    { "id": "test-piece", "file": "soma-egg-test-piece.stl", "defines": { "mode": "test_piece" }, "test": true, "title": { "et": "Üks tükk", "en": "One piece" } }
   ],
   "stage_export": "egg",
   "allowed_nonmanifold_edges": 0,
@@ -46,10 +46,11 @@
       { "id": "piece-p", "defines": { "mode": "solved_piece", "piece": 6 }, "colour": "#e23a2e", "path": [[0, 0, 0, 0], [0.3, 0, 0, 0], [0.6, 0, 0, 45], [1, -30, -10, 42.5]] }
     ]
   },
-  "replay": {
-    "last_layer": 228,
-    "rotate_deg": 0
-  },
+  "plates": [
+    { "id": "blue", "title": { "et": "Muna ja kork", "en": "Egg and cap" }, "colour": "#4b8fe0", "last_layer": 228, "rotate_deg": 0 },
+    { "id": "red", "title": { "et": "Neli punast tükki", "en": "Four red pieces" }, "colour": "#e23a2e", "last_layer": 99, "rotate_deg": 0 },
+    { "id": "white", "title": { "et": "Kolm valget tükki", "en": "Three white pieces" }, "colour": "#f5f3ee", "last_layer": 99, "rotate_deg": 0 }
+  ],
   "probes": {
     "variant_heading": { "et": "Tükid", "en": "Pieces" },
     "value_heading": { "et": "Mõõt", "en": "Measure" },

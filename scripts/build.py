@@ -19,10 +19,17 @@ def build(part: dict) -> None:
         ws.render_or_exit(part, folder / export["file"], export["defines"], export["id"])
     for item in ws.rendered_items(part):
         ws.render_or_exit(part, folder / ws.item_file(part, item), item["defines"], f"assembly {item['id']}")
-    replay = ws.REPLAYS / f"{part['id']}.bin.gz"
-    if not replay.exists():
-        raise SystemExit(f"FAIL {part['id']}: run scripts/replay.py first, {replay.name} is missing")
-    shutil.copyfile(replay, folder / "replay.bin.gz")
+    named = set()
+    for plate in ws.plates_or_exit(part):
+        replay = ws.replay_path(part, plate)
+        if not replay.exists():
+            raise SystemExit(f"FAIL {part['id']}: run scripts/replay.py first, {replay.name} is missing")
+        target = ws.published_replay(part, plate)
+        shutil.copyfile(replay, target)
+        named.add(target.name)
+    for stale in folder.glob("replay*.bin.gz"):
+        if stale.name not in named:
+            stale.unlink()
     results = ws.CHECK_RESULTS / f"{part['id']}.json"
     if not results.exists():
         raise SystemExit(f"FAIL {part['id']}: run scripts/check.py first")

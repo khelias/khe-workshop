@@ -2,7 +2,7 @@
 import * as THREE from '../vendor/three/three.module.js';
 import { OrbitControls } from '../vendor/three/OrbitControls.js';
 import { pathAt, reach } from './assembly.js';
-import { buildToolpaths, decodeReplay, formatDuration, layerAt, loadBytes, secondsToSlider, sliderToSeconds, verticesAt } from './replay.js';
+import { buildToolpaths, decodeReplay, formatDuration, layerAt, loadBytes, plateAt, rowLayout, timeline, turnedBox, verticesAt } from './replay.js';
 import { bounds, moveBy, parseStl, placeOnBed, trianglesWhere } from './stl.js';
 
 const SLIDER_MAX = 1000;
@@ -66,12 +66,15 @@ class Stage {
     this.root = root;
     this.config = JSON.parse(root.querySelector('[data-stage-config]').textContent);
     this.text = this.config.text;
+    this.plates = this.config.plates;
+    this.stageIndex = this.plates.findIndex((plate) => plate.stage);
+    this.stagePlate = this.plates[this.stageIndex];
     this.canvas = root.querySelector('canvas');
     this.slider = root.querySelector('[data-stage-slider]');
     this.readout = root.querySelector('[data-stage-readout]');
     this.status = root.querySelector('[data-stage-status]');
     this.play = root.querySelector('[data-stage-play]');
-    this.mark = root.querySelector('[data-stage-mark]');
+    this.timeline = root.querySelector('.stage__timeline');
     this.tabs = [...root.querySelectorAll('[data-view]')];
     this.view = 'model';
     this.values = { model: 0, cut: SLIDER_MAX / 2, print: SLIDER_MAX * 0.55, parts: (this.config.assembly?.start ?? 0) * SLIDER_MAX };
@@ -85,7 +88,7 @@ class Stage {
   }
 
   async start() {
-    const inlay = this.config.inlay ? loadBytes(this.config.inlay.stl) : null;
+    const inlay = this.stagePlate?.inlay ? loadBytes(this.stagePlate.inlay.stl) : null;
     inlay?.catch(() => {});
     this.buildScene(parseStl(await loadBytes(this.config.stl)));
     this.bindControls();
@@ -100,17 +103,17 @@ class Stage {
   addInlay(mesh) {
     moveBy(mesh, this.shift);
     // It fills the stage mesh's groove exactly, so it is drawn a little nearer to win.
-    this.inlay = this.addSolid(geometryOf(mesh), this.config.inlay.colour, { polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -4 });
+    this.inlay = this.addSolid(geometryOf(mesh), this.stagePlate.inlay.colour, { polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -4 }, this.stageGroup);
     this.inlay.material.clippingPlanes = this.view === 'cut' ? this.clipped : NO_CLIP;
     this.inlay.visible = this.view !== 'parts';
     this.invalidate();
   }
 
-  addSolid(geometry, colour, options = {}) {
+  addSolid(geometry, colour, options = {}, parent = this.turntable) {
     const material = solidMaterial(colour, options);
     this.materials.push(material);
     const mesh = solidMesh(geometry, material);
-    this.turntable.add(mesh);
+    parent.add(mesh);
     return mesh;
   }
 
@@ -132,7 +135,8 @@ class Stage {
     scene.add(rim);
 
     const bedMm = this.config.bed;
-    const bed = new THREE.Mesh(new THREE.PlaneGeometry(bedMm, bedMm), new THREE.MeshStandardMaterial({ color: '#262e33', roughness: 0.9 }));
+    this.bedMaterial = new THREE.MeshStandardMaterial({ color: '#262e33', roughness: 0.9 });
+    const bed = new THREE.Mesh(new THREE.PlaneGeometry(bedMm, bedMm), this.bedMaterial);
     bed.rotation.x = -Math.PI / 2;
     bed.position.y = -0.3;
     scene.add(bed);
@@ -146,38 +150,43 @@ class Stage {
     scene.add(world);
     this.turntable = new THREE.Group();
     world.add(this.turntable);
+    // What belongs to the stage plate's print goes into the row with it once it is done.
+    this.stageGroup = new THREE.Group();
+    this.turntable.add(this.stageGroup);
 
-    const top = this.config.top;
+    const top = this.stagePlate?.top;
     const placed = placeOnBed(mesh, top ? top.above : null);
     this.size = placed.size;
     this.shift = placed.shift;
     this.clip = new THREE.Plane(new THREE.Vector3(-1, 0, 0), 0);
     this.clipped = [this.clip];
-    const rgb = hexToRgb(this.config.colour);
+    const colour = (this.stagePlate ?? this.plates[0]).colour;
     const bodyGeometry = geometryOf(placed.body);
-    this.materials = [new THREE.MeshStandardMaterial({ color: isDark(rgb) ? '#676e74' : this.config.colour, roughness: 0.58, side: THREE.DoubleSide })];
+    this.materials = [new THREE.MeshStandardMaterial({ color: isDark(hexToRgb(colour)) ? '#676e74' : colour, roughness: 0.58, side: THREE.DoubleSide })];
     this.body = new THREE.Mesh(bodyGeometry, this.materials[0]);
     this.body.renderOrder = 2;
     this.turntable.add(this.body);
 
-    if (placed.top.positions.length) this.top = this.addSolid(geometryOf(placed.top), top.colour);
+    if (placed.top.positions.length) this.top = this.addSolid(geometryOf(placed.top), top.colour, {}, this.stageGroup);
 
     // The layers printed before the replay starts stay in the print view as the model, cut just
     // under the replay's first layer: only the triangles that reach that low, for a light draw.
-    const below = this.config.below;
+    const below = this.stagePlate?.below;
     if (below) {
       const cut = below.z - 0.02;
       const material = this.materials[0].clone();
       material.clippingPlanes = [new THREE.Plane(new THREE.Vector3(0, -1, 0), cut)];
       this.base = new THREE.Mesh(geometryOf(trianglesWhere(placed.body, (a, b, c) => Math.min(a, b, c) < cut)), material);
       this.base.renderOrder = 2;
-      this.turntable.add(this.base);
+      this.stageGroup.add(this.base);
     }
 
     this.buildCut(geometryOf({ positions: placed.whole.positions }));
 
-    this.ghost = new THREE.Mesh(bodyGeometry, new THREE.MeshBasicMaterial({ color: '#9fb4bd', transparent: true, opacity: 0.07, depthWrite: false, side: THREE.DoubleSide }));
-    this.turntable.add(this.ghost);
+    if (this.stagePlate) {
+      this.ghost = new THREE.Mesh(bodyGeometry, new THREE.MeshBasicMaterial({ color: '#9fb4bd', transparent: true, opacity: 0.07, depthWrite: false, side: THREE.DoubleSide }));
+      this.stageGroup.add(this.ghost);
+    }
 
     this.head = new THREE.Mesh(new THREE.SphereGeometry(Math.max(this.size[2] / 110, 1.1), 16, 12), new THREE.MeshBasicMaterial({ color: CAP }));
     this.turntable.add(this.head);
@@ -270,13 +279,16 @@ class Stage {
     this.slider.setAttribute('aria-label', this.text.slider[view]);
     this.play.hidden = true;
     this.showStatus('');
-    if (view !== 'parts' && this.framing !== this.partFrame) {
-      this.frameOn(this.partFrame);
+    const reframe = () => {
+      const frame = { print: this.printFrame, parts: this.spreadFrame }[view] ?? this.partFrame;
+      if (this.framing === frame) return;
+      this.frameOn(frame);
       this.aim(0.62, 0.32);
-    }
+    };
+    if (view !== 'parts') reframe();
     if (view === 'cut') this.aim(1.15, this.size[2] < 80 ? 0.55 : 0.2);
     // The print and parts views load their data when first opened.
-    const loader = { print: !this.fullLines && 'loadPaths', parts: !this.items && 'loadItems' }[view];
+    const loader = { print: !this.printPlates && 'loadPaths', parts: !this.items && 'loadItems' }[view];
     if (loader) {
       this.configureView();
       this.invalidate();
@@ -292,32 +304,94 @@ class Stage {
       if (this.view !== view) return;
       this.showStatus('');
     }
-    if (view === 'parts' && this.framing !== this.spreadFrame) {
-      this.frameOn(this.spreadFrame);
-      this.aim(0.62, 0.32);
-    }
+    if (view === 'parts' || view === 'print') reframe();
     this.play.hidden = view !== 'print' || this.still;
     this.configureView();
     this.apply();
   }
 
   async loadPaths() {
-    const replay = await decodeReplay(await loadBytes(this.config.replay));
-    const built = buildToolpaths(replay, this.config.rotate, pathPalette(hexToRgb(this.config.colour)), this.lite);
-    this.meta = replay.meta;
-    this.layerVertex = built.all.layerVertex;
-    this.fullLines = lineObject(built.all);
-    this.fullLines.visible = this.view === 'print';
-    this.turntable.add(this.fullLines);
-    if (this.lite) {
-      this.wallVertex = built.outer.layerVertex;
-      this.wallLines = lineObject(built.outer);
-      this.wallLines.visible = this.view === 'print';
-      this.turntable.add(this.wallLines);
+    const replays = await Promise.all(this.plates.map(async (plate) => decodeReplay(await loadBytes(plate.replay))));
+    const isPrint = this.view === 'print';
+    this.printPlates = replays.map((replay, index) => {
+      const plate = this.plates[index];
+      const built = buildToolpaths(replay, plate.rotate, pathPalette(hexToRgb(plate.colour)), this.lite);
+      const group = index === this.stageIndex ? this.stageGroup : new THREE.Group();
+      const full = lineObject(built.all);
+      full.visible = isPrint;
+      group.add(full);
+      let walls = null;
+      if (this.lite) {
+        walls = lineObject(built.outer);
+        walls.visible = isPrint;
+        group.add(walls);
+      }
+      if (group !== this.stageGroup) this.turntable.add(group);
+      const { meta } = replay;
+      return {
+        meta, group, full, walls, layerVertex: built.all.layerVertex, wallVertex: built.outer.layerVertex,
+        span: [meta.start_seconds ?? 0, meta.seconds], box: turnedBox(meta.walls, plate.rotate), height: meta.layers.at(-1)[0],
+      };
+    });
+    this.spans = this.printPlates.map((plate) => plate.span);
+    // The readout counts each earlier plate's whole print, cut layers included.
+    let before = 0;
+    for (const plate of this.printPlates) {
+      plate.before = before;
+      before += plate.meta.print_seconds;
     }
-    this.startSeconds = this.meta.start_seconds ?? 0;
-    const change = this.meta.colour_changes[0];
-    if (change) this.mark.style.insetInlineStart = `${Math.min(secondsToSlider(change.seconds, 1, this.meta.seconds, this.startSeconds), 1) * 100}%`;
+    this.totalSeconds = before;
+    const row = rowLayout(this.printPlates.map((plate) => plate.box));
+    row.offsets.forEach((offset, index) => { this.printPlates[index].offset = offset; });
+    this.printFrame = this.partFrame;
+    if (row.offsets.length) {
+      this.printFrame = this.rowFrame(row.end);
+      this.buildShelf(row.end + 20);
+    }
+    this.buildMarks();
+  }
+
+  // The largest plate at the centre and every finished plate in the row beside it.
+  rowFrame(end) {
+    const boxes = this.printPlates.map((plate) => plate.box);
+    const low = -Math.max(...boxes.map(([width]) => width)) / 2;
+    const deepest = Math.max(...boxes.map(([, depth]) => depth));
+    const height = Math.max(this.size[2], ...this.printPlates.map((plate) => plate.height));
+    return { centre: new THREE.Vector3((low + end) / 2, height / 2, 0), radius: Math.hypot(end - low, deepest, height) / 2 };
+  }
+
+  // Where the row runs past the bed, the surface goes on under it, without the bed's grid.
+  buildShelf(end) {
+    const half = this.config.bed / 2;
+    if (end <= half) return;
+    this.shelf = new THREE.Mesh(new THREE.PlaneGeometry(end - half, this.config.bed), this.bedMaterial);
+    this.shelf.rotation.x = -Math.PI / 2;
+    this.shelf.position.set((half + end) / 2, -0.3, 0);
+    this.shelf.visible = this.view === 'print';
+    this.scene.add(this.shelf);
+  }
+
+  // A mark where each later plate starts, and one at each colour change inside a plate's replay.
+  buildMarks() {
+    const { before, total } = timeline(this.spans);
+    const at = [];
+    this.printPlates.forEach((plate, index) => {
+      if (index) at.push([before[index], this.text.plate_mark]);
+      const { first } = this.plates[index];
+      const last = first + plate.meta.layers.length - 1;
+      for (const change of plate.meta.colour_changes) {
+        if (change.layer >= first && change.layer <= last) at.push([before[index] + change.seconds - plate.span[0], this.text.colour_change]);
+      }
+    });
+    this.marks = at.map(([seconds, title]) => {
+      const mark = document.createElement('span');
+      mark.className = 'stage__mark';
+      mark.title = title;
+      mark.hidden = this.view !== 'print';
+      mark.style.insetInlineStart = `${Math.min(Math.max(seconds / total, 0), 1) * 100}%`;
+      this.timeline.append(mark);
+      return mark;
+    });
   }
 
   async loadItems() {
@@ -353,14 +427,21 @@ class Stage {
     this.cap.visible = isCut;
     this.body.visible = !isPrint && !isParts;
     if (this.base) this.base.visible = isPrint;
-    this.ghost.visible = isPrint;
+    if (this.ghost) this.ghost.visible = isPrint;
     this.head.visible = false;
     if (this.top) this.top.visible = !isPrint && !isParts;
     if (this.inlay) this.inlay.visible = !isParts;
     if (this.items) this.items.visible = isParts;
-    if (this.fullLines) this.fullLines.visible = isPrint;
-    if (this.wallLines) this.wallLines.visible = isPrint;
-    this.mark.hidden = !(isPrint && this.meta?.colour_changes.length);
+    if (!isPrint) {
+      this.stageGroup.visible = true;
+      this.stageGroup.position.x = 0;
+    }
+    for (const plate of this.printPlates ?? []) {
+      plate.full.visible = isPrint;
+      if (plate.walls) plate.walls.visible = isPrint;
+    }
+    for (const mark of this.marks ?? []) mark.hidden = !isPrint;
+    if (this.shelf) this.shelf.visible = isPrint;
     if (this.view !== 'model') this.turntable.rotation.z = 0;
   }
 
@@ -373,7 +454,7 @@ class Stage {
       this.applyCut(value);
     } else if (this.view === 'parts') {
       if (this.items) this.applyParts(value);
-    } else if (this.meta) {
+    } else if (this.printPlates) {
       this.applyPrint(value);
     }
     this.invalidate();
@@ -395,28 +476,46 @@ class Stage {
   }
 
   applyPrint(value) {
-    const meta = this.meta;
-    const seconds = sliderToSeconds(value, SLIDER_MAX, meta.seconds, this.startSeconds);
-    const position = layerAt(meta.layers, meta.seconds, seconds);
-    const full = verticesAt(this.layerVertex, position);
+    const { plate: current, seconds } = plateAt(this.spans, value, SLIDER_MAX);
     const finished = value >= SLIDER_MAX;
+    this.printPlates.forEach((plate, index) => {
+      plate.group.visible = index <= current;
+      plate.group.position.x = index < current ? plate.offset : 0;
+      if (index < current) {
+        // A phone draws a finished plate's outer walls only, to keep its line count low.
+        plate.full.visible = !this.lite;
+        plate.full.geometry.setDrawRange(0, plate.layerVertex.at(-1));
+        if (plate.walls) plate.walls.geometry.setDrawRange(0, plate.wallVertex.at(-1));
+      }
+    });
+    const plate = this.printPlates[current];
+    const { meta } = plate;
+    const position = layerAt(meta.layers, meta.seconds, seconds);
+    const full = verticesAt(plate.layerVertex, position);
+    plate.full.visible = true;
     if (this.lite) {
-      this.wallLines.geometry.setDrawRange(0, verticesAt(this.wallVertex, position).start);
-      this.fullLines.geometry.setDrawRange(full.start, full.upTo - full.start);
+      plate.walls.geometry.setDrawRange(0, verticesAt(plate.wallVertex, position).start);
+      plate.full.geometry.setDrawRange(full.start, full.upTo - full.start);
     } else {
-      this.fullLines.geometry.setDrawRange(0, full.upTo);
+      plate.full.geometry.setDrawRange(0, full.upTo);
     }
-    if (this.top) this.top.visible = finished;
-    const points = this.fullLines.geometry.attributes.position.array;
+    const stageDone = this.stageIndex >= 0 && (this.stageIndex < current || (this.stageIndex === current && finished));
+    if (this.top) this.top.visible = stageDone;
+    if (this.ghost) this.ghost.visible = this.stageIndex === current;
+    const points = plate.full.geometry.attributes.position.array;
     const last = full.upTo - 1;
     this.head.visible = !finished && last >= 0;
     if (last >= 0) this.head.position.set(points[last * 3], points[last * 3 + 1], points[last * 3 + 2]);
     let text = this.text.print
-      .replace('{time}', formatDuration(seconds))
-      .replace('{layer}', position.index + this.config.first)
-      .replace('{total}', meta.total_layers);
-    if (finished && this.config.top) text += `, ${this.config.top.label}`;
-    if (value === 0 && this.config.below) text += `, ${this.config.below.label}`;
+      .replace('{time}', formatDuration(plate.before + seconds))
+      .replace('{total}', formatDuration(this.totalSeconds))
+      .replace('{plates}', this.plates.length)
+      .replace('{plate}', current + 1)
+      .replace('{layers}', meta.total_layers)
+      .replace('{layer}', position.index + this.plates[current].first);
+    const stage = this.stagePlate;
+    if (finished && stage?.top) text += `, ${stage.top.label}`;
+    if (this.stageIndex === current && seconds <= plate.span[0] && stage.below) text += `, ${stage.below.label}`;
     this.setReadout(text);
   }
 

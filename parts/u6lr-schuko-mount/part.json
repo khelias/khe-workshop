@@ -29,8 +29,8 @@
   },
   "exports": [
     { "id": "mount", "file": "u6lr-schuko-mount.stl", "defines": {}, "title": { "et": "Hoidik", "en": "Mount" } },
-    { "id": "plug-test", "file": "u6lr-plug-test.stl", "defines": { "part": "plug_test" }, "title": { "et": "Pistiku proov", "en": "Plug test" } },
-    { "id": "lock-test", "file": "u6lr-lock-test.stl", "defines": { "part": "lock_test" }, "title": { "et": "Luku proov", "en": "Lock test" } }
+    { "id": "plug-test", "file": "u6lr-plug-test.stl", "defines": { "part": "plug_test" }, "test": true, "title": { "et": "Pistiku proov", "en": "Plug test" } },
+    { "id": "lock-test", "file": "u6lr-lock-test.stl", "defines": { "part": "lock_test" }, "test": true, "title": { "et": "Luku proov", "en": "Lock test" } }
   ],
   "stage_export": "mount",
   "allowed_nonmanifold_edges": 4,

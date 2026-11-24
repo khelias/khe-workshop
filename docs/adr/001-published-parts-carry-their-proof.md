@@ -1,6 +1,6 @@
 # ADR-001: Published parts carry their proof, in OpenSCAD, with generated data committed
 
-- **Status:** Accepted (2026-11-24); point 1 superseded by [ADR-002](002-the-print-and-its-use-are-the-proof.md); point 3's budget raised from 5 to 10 MB on 2026-11-19, for the yarn bowl, before anything depended on the number; point 3 extended to assembly renders on 2026-11-24, for the Soma egg
+- **Status:** Accepted (2026-11-24); point 1 superseded by [ADR-002](002-the-print-and-its-use-are-the-proof.md); point 3's budget raised from 5 to 10 MB on 2026-11-19, for the yarn bowl, before anything depended on the number; point 3 extended to assembly renders on 2026-11-24, for the Soma egg, and to one replay per plate on 2026-11-24, for a part printed on several plates
 - **Related:** [estate ADR-043](https://github.com/khelias/khe-architecture/blob/main/decisions/043-household-parts-are-public-source-built-into-khe-sites.md)
 
 ## Context
@@ -21,7 +21,10 @@ the page, and licences that respect where each shape came from.
 3. **Generated page data is committed per published part, within 10 MB.** G-code
    cannot be made in CI, because the printer's slicer profile stays out of public
    repos. The STL files, the replay and the check results are written locally by
-   `scripts/build.py`, and the check proves they match the source. A part that
+   `scripts/build.py`, and the check proves they match the source. A part printed
+   on several plates declares `plates` in `part.json` and commits one replay per
+   plate, `published/replay-<plate>.bin.gz`, each within the replay's 1.5 MB, the
+   part as a whole within the same budget. A part that
    declares an `assembly` in `part.json` also commits a render of each item that
    is not an export, `published/assembly-<item>.stl`: its pieces in place, shown in
    the room's parts view and never offered as a download, within the same budget.

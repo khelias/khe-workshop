@@ -243,3 +243,14 @@ tbody th { color: var(--ink); font-weight: 500; }
 @media (max-width: 520px), (any-pointer: coarse) {
   .stage__view { height: 54vh; min-height: 220px; }
 }
+
+.swatch {
+  display: inline-block;
+  width: 0.75em;
+  height: 0.75em;
+  margin-inline-end: 8px;
+  outline: 1px solid var(--muted);
+  background: var(--swatch);
+  vertical-align: -0.05em;
+}
+.block h3 { margin: 16px 0 8px; color: var(--ink); font-size: 15px; font-weight: 500; }

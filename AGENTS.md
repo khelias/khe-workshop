@@ -19,9 +19,10 @@ This repo's own decisions: [docs/adr/](docs/adr/).
   0.001 mm (a few small patches may be triangulated differently) and `check.json`
   without its hashes and triangle counts, numbers within 0.001.
 - `python3 scripts/build.py` - writes `published/` for parts marked published.
-- `python3 scripts/replay.py <gcode> --part <id>` - turns printed G-code into
-  `build/replay/<id>.bin.gz`, within 1.5 MB, from the part's `replay` settings.
-  G-code stays out of git.
+- `python3 scripts/replay.py <gcode> --part <id> [--plate <plate>]` - turns printed
+  G-code into `build/replay/<id>.bin.gz`, or `<id>-<plate>.bin.gz` for one plate of a
+  part with `plates` (required there, refused without), within 1.5 MB, from the
+  part's or the plate's replay settings. G-code stays out of git.
 - `python3 scripts/site_build.py <out> [--preview] [--base /workshop/]` - writes the
   room's pages. `--preview` includes unpublished parts that have a replay and
   names the ones it leaves out; without it the build verifies
@@ -83,6 +84,16 @@ inside the stage mesh in the colour printed below the replay. `replay.tolerance`
 (1/100 mm, default 2) merges more for a replay over its budget, and an export's
 `defines` may lower `$fn` or a mesh resolution for a part over its 10 MB budget
 ([ADR-001](docs/adr/001-published-parts-carry-their-proof.md)).
+
+A part printed on several plates lists `plates` instead of `replay`, in print order:
+each an `id`, a `title` in et and en, the replay settings above and an optional
+display `colour` (`#rrggbb`, which wins over the G-code's, since the slicer's
+filament colours are often unset). At most one plate has `stage: true`, the one that
+prints `stage_export` alone; only it carries `before_label`, `after_label` and the
+part's `stage_inlay`, and the stage draws the ghost and the model's top and base
+with it. The Print view plays the plates one after another, with finished plates
+standing in a row beside the one printing, and the facts get a row per plate and a
+total. An export with `"test": true` is listed under the fit tests.
 
 A part made of several pieces may declare an `assembly`: a tab `label` in et and en,
 the slider's `start` (0 to 1) and `items`, each an export by id or its own `defines`

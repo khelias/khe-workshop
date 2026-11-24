@@ -140,17 +140,57 @@ export function verticesAt(layerVertex, position) {
   return { start, upTo: start + count };
 }
 
-// A replay that starts above layer 1 starts its slider at its first layer's time.
-export function sliderToSeconds(value, max, totalSeconds, startSeconds = 0) {
-  return startSeconds + (value / max) * (totalSeconds - startSeconds);
-}
-
-export function secondsToSlider(seconds, max, totalSeconds, startSeconds = 0) {
-  return ((seconds - startSeconds) / (totalSeconds - startSeconds)) * max;
-}
-
 export function formatDuration(seconds) {
   const minutes = Math.floor(seconds / 60);
   const hours = Math.floor(minutes / 60);
   return hours ? `${hours} h ${minutes % 60} min` : `${minutes} min`;
+}
+
+// The plates' replayed spans, each [start, end] in its own seconds, laid end to end on one
+// slider: each one's length, the seconds of the spans before it and the sum.
+export function timeline(spans) {
+  const before = [];
+  let total = 0;
+  const lengths = spans.map(([start, end]) => {
+    before.push(total);
+    total += end - start;
+    return end - start;
+  });
+  return { lengths, before, total };
+}
+
+// The plate and the time in its own print at a slider value. A boundary belongs to the plate
+// that starts there; a replay from above layer 1 starts at its first layer's time.
+export function plateAt(spans, value, max = 1) {
+  const { lengths, before, total } = timeline(spans);
+  const at = Math.min(Math.max(value / max, 0), 1) * total;
+  let plate = spans.length - 1;
+  while (plate > 0 && at < before[plate] - total * 1e-9) plate -= 1;
+  return { plate, seconds: spans[plate][0] + Math.min(Math.max(at - before[plate], 0), lengths[plate]) };
+}
+
+// A walls box [minX, minY, maxX, maxY] turned as printed, as [width, depth].
+export function turnedBox([minX, minY, maxX, maxY], rotateDeg) {
+  const angle = (rotateDeg * Math.PI) / 180;
+  const cos = Math.abs(Math.cos(angle));
+  const sin = Math.abs(Math.sin(angle));
+  const width = maxX - minX;
+  const depth = maxY - minY;
+  return [width * cos + depth * sin, width * sin + depth * cos];
+}
+
+// The row of finished plates beside the one printing, which sits at the centre: the x offset
+// of each plate but the last, which is never finished while another prints, and where the row
+// ends. It starts clear of the widest plate and runs along +x.
+export function rowLayout(boxes, gap = 15) {
+  const widest = Math.max(...boxes.map(([width]) => width));
+  let end = widest / 2;
+  let x = end + 20;
+  const offsets = boxes.slice(0, -1).map(([width]) => {
+    const centre = x + width / 2;
+    end = x + width;
+    x = end + gap;
+    return centre;
+  });
+  return { offsets, end };
 }
