@@ -182,7 +182,8 @@ class Site:
         for part in ws.load_parts():
             if not (preview or part.get("published")):
                 continue
-            if not part.get("published") and not all(ws.replay_path(part, plate).exists() for plate in ws.plates(part)):
+            has_replay = "replay" in part or "plates" in part
+            if not part.get("published") and not (has_replay and all(ws.replay_path(part, plate).exists() for plate in ws.plates(part))):
                 print(f"note: {part['id']} is left out, it has no replay data yet")
                 continue
             self.parts.append(part)

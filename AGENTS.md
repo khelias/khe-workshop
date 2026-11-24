@@ -33,7 +33,7 @@ This repo's own decisions: [docs/adr/](docs/adr/).
   (`khe:head`, `khe:header`, `khe:footer`, `khe:consent`) are where khe-sites adds
   the family shell.
 - `node --test web/test/*.test.mjs` - the decoder, the slider, the loaders, the parts
-  view's paths, and a `--base` build of the published parts.
+  view's paths, the camera fit, and a `--base` build of the published parts.
 - `npm run -s lint` - the family design check, against an empty baseline.
 - `parts/<id>/data/prep.py` - prepares a part's data from open sources, by hand, with
   the pinned `uv run` command in its docstring; never part of the check or CI
