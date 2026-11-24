@@ -16,6 +16,10 @@ const PAD_MARGIN = 12;
 const PAD_GAP = 24;
 const GRID_MM = 20;
 const GRID_COLOURS = ['#4c5961', '#3a454c'];
+// Azimuth and elevation the camera starts from. A tall view looks along a row of plates, so they
+// stand one behind another and fill its height.
+const FIRST_AIM = [0.62, 0.32];
+const ALONG_ROW_AIM = [1.2, 0.45];
 
 function hexToRgb(hex) {
   const value = parseInt(hex.slice(1), 16);
@@ -202,7 +206,7 @@ class Stage {
       if (!event.ctrlKey && !event.metaKey) event.stopPropagation();
     }, { capture: true, passive: true });
     this.controls.addEventListener('change', () => this.invalidate());
-    this.aim(0.62, 0.32);
+    this.aim(...FIRST_AIM);
   }
 
   buildCut(whole) {
@@ -278,13 +282,20 @@ class Stage {
     this.width = width;
     this.height = height;
     this.renderer.setSize(width, height, false);
-    // A row fitted to its box fits for one aspect, so a new one fits it again from where it is seen.
+    // A row fitted to its box fits for one aspect, so a new one fits it again from where it is seen,
+    // or, when the view turns between wide and tall, from where that one starts.
     const angles = this.framing?.points && [this.controls.getAzimuthalAngle(), Math.PI / 2 - this.controls.getPolarAngle()];
     const zoom = angles && this.camera.position.distanceTo(this.controls.target) / this.rowFit(...angles).distance;
+    const wasTall = this.camera.aspect < 1;
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
-    if (angles) this.aim(...angles, zoom);
+    if (angles && wasTall !== this.camera.aspect < 1) this.aim(...this.firstAim());
+    else if (angles) this.aim(...angles, zoom);
     this.invalidate();
+  }
+
+  firstAim() {
+    return this.framing.points && this.camera.aspect < 1 ? ALONG_ROW_AIM : FIRST_AIM;
   }
 
   async setView(view) {
@@ -299,7 +310,7 @@ class Stage {
       const frame = { print: this.printFrame, parts: this.spreadFrame }[view] ?? this.partFrame;
       if (this.framing === frame) return;
       this.frameOn(frame);
-      this.aim(0.62, 0.32);
+      this.aim(...this.firstAim());
     };
     if (view !== 'parts') reframe();
     if (view === 'cut') this.aim(1.15, this.size[2] < 80 ? 0.55 : 0.2);
