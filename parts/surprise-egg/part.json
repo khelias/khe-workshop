@@ -12,7 +12,8 @@
   "licence": "CC-BY-4.0",
   "credit": null,
   "source": "surprise-egg.scad",
-  "published": false,
+  "published": true,
+  "draft": true,
   "exports": [
     { "id": "egg", "file": "surprise-egg.stl", "defines": { "mode": "egg", "steps": 32, "rib_slices": 24 }, "title": { "et": "Muna koos korgiga", "en": "Egg with its cap" } },
     { "id": "base", "file": "surprise-egg-base.stl", "defines": { "mode": "base", "steps": 32, "rib_slices": 24 }, "title": { "et": "Alus", "en": "Base" } },

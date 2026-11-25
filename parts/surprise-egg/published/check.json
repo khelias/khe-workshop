@@ -1,0 +1,92 @@
+{
+ "id": "surprise-egg",
+ "openscad": "2026.10.11",
+ "exports": [
+  {
+   "id": "egg",
+   "file": "surprise-egg.stl",
+   "triangles": 69056,
+   "size_mm": [
+    59.157,
+    59.157,
+    72.85
+   ],
+   "volume_cm3": 39.6,
+   "nonmanifold_edges": 0,
+   "sha256": "1cbc9b786e20cf35febd559b6fce1b3d6c0ebe7329eb3e9353c3427167ebd06b"
+  },
+  {
+   "id": "base",
+   "file": "surprise-egg-base.stl",
+   "triangles": 49086,
+   "size_mm": [
+    59.157,
+    59.157,
+    45.6
+   ],
+   "volume_cm3": 16.8,
+   "nonmanifold_edges": 0,
+   "sha256": "fe2e1271ccc48187ac5d93b574a864c43094618d497137c709af8a0f2cd3d6b4"
+  },
+  {
+   "id": "cap",
+   "file": "surprise-egg-cap.stl",
+   "triangles": 27968,
+   "size_mm": [
+    57.003,
+    57.003,
+    35.25
+   ],
+   "volume_cm3": 21.8,
+   "nonmanifold_edges": 0,
+   "sha256": "533a7d3018beb8a32f7494c6352b049fc0d44ab13b0e41dc3b2c67e7ee09577b"
+  }
+ ],
+ "probes": [
+  {
+   "id": "wall-1.6",
+   "label": {
+    "et": "Sein 1,6 mm",
+    "en": "1.6 mm wall"
+   },
+   "checks": [
+    {
+     "id": "cavity-d",
+     "label": {
+      "et": "Ava läbimõõt on vähemalt 40 mm",
+      "en": "The opening is at least 40 mm across"
+     },
+     "passed": true,
+     "value": 43.1335
+    },
+    {
+     "id": "min-wall",
+     "label": {
+      "et": "Kõige õhem sein on vähemalt 1,2 mm",
+      "en": "The thinnest wall is at least 1.2 mm"
+     },
+     "passed": true,
+     "value": 1.59879
+    },
+    {
+     "id": "overhang",
+     "label": {
+      "et": "Ükski sisepind ei ulatu prinditult üle 45 kraadi",
+      "en": "No inner surface overhangs more than 45 degrees as printed"
+     },
+     "passed": true,
+     "value": 0.0
+    },
+    {
+     "id": "thread",
+     "label": {
+      "et": "Keermel on lõtk, kork ei hõõru vastu alust",
+      "en": "The thread has play, the cap does not rub the base"
+     },
+     "passed": true,
+     "value": null
+    }
+   ]
+  }
+ ]
+}
