@@ -5,41 +5,41 @@
   {
    "id": "egg",
    "file": "surprise-egg.stl",
-   "triangles": 69056,
+   "triangles": 96160,
    "size_mm": [
-    59.157,
-    59.157,
-    72.85
+    55.945,
+    55.945,
+    78.6
    ],
-   "volume_cm3": 39.6,
+   "volume_cm3": 35.0,
    "nonmanifold_edges": 0,
-   "sha256": "1cbc9b786e20cf35febd559b6fce1b3d6c0ebe7329eb3e9353c3427167ebd06b"
+   "sha256": "7aaa78a35e0ebd3ed5b19212ce6c68753d78b83efd318edec3ea1515622544e0"
   },
   {
    "id": "base",
    "file": "surprise-egg-base.stl",
-   "triangles": 49086,
+   "triangles": 50158,
    "size_mm": [
-    59.157,
-    59.157,
-    45.6
+    55.88,
+    55.88,
+    38.6
    ],
-   "volume_cm3": 16.8,
+   "volume_cm3": 12.8,
    "nonmanifold_edges": 0,
-   "sha256": "fe2e1271ccc48187ac5d93b574a864c43094618d497137c709af8a0f2cd3d6b4"
+   "sha256": "d73a195740d7a54c844cb7000e65539668f43459953840cce394ce7772cb0591"
   },
   {
    "id": "cap",
    "file": "surprise-egg-cap.stl",
-   "triangles": 27968,
+   "triangles": 53878,
    "size_mm": [
-    57.003,
-    57.003,
-    35.25
+    55.945,
+    55.945,
+    48.0
    ],
-   "volume_cm3": 21.8,
+   "volume_cm3": 21.1,
    "nonmanifold_edges": 0,
-   "sha256": "533a7d3018beb8a32f7494c6352b049fc0d44ab13b0e41dc3b2c67e7ee09577b"
+   "sha256": "1d9fcd337239565a0a958edb79eeebad7f3ab95c4760837cae16be26d2c70227"
   }
  ],
  "probes": [
@@ -66,7 +66,7 @@
       "en": "The thinnest wall is at least 1.2 mm"
      },
      "passed": true,
-     "value": 1.59879
+     "value": 1.6
     },
     {
      "id": "overhang",
@@ -76,6 +76,33 @@
      },
      "passed": true,
      "value": 0.0
+    },
+    {
+     "id": "cavity-h",
+     "label": {
+      "et": "Sees on vähemalt 70 mm kõrgust",
+      "en": "The cavity is at least 70 mm tall"
+     },
+     "passed": true,
+     "value": 75.0
+    },
+    {
+     "id": "foot",
+     "label": {
+      "et": "Jala juures ei ulatu kest üle 60 kraadi",
+      "en": "The shell overhangs at most 60 degrees at the foot"
+     },
+     "passed": true,
+     "value": 0.192
+    },
+    {
+     "id": "cap-lean",
+     "label": {
+      "et": "Korgi välispind ei ulatu prinditult üle 45 kraadi",
+      "en": "The cap's outside overhangs at most 45 degrees as printed"
+     },
+     "passed": true,
+     "value": 17.311
     },
     {
      "id": "thread",
@@ -88,5 +115,6 @@
     }
    ]
   }
- ]
+ ],
+ "assembly": []
 }

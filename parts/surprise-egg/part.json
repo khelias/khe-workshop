@@ -2,12 +2,12 @@
   "id": "surprise-egg",
   "title": { "et": "Üllatusmuna", "en": "Surprise egg" },
   "summary": {
-    "et": "Keeratava korgiga õõnes muna väikese mänguasja jaoks.",
-    "en": "A hollow screw-top egg for a small toy."
+    "et": "Keeratava korgiga õõnes muna väikesele mänguasjale, mis sees loksub.",
+    "en": "A hollow screw-top egg for a small toy that rattles inside."
   },
   "story": {
-    "et": "Soma muna kest, keere ja ribid, aga sees on tühi ruum, kuhu mahub väike painduv loom. Sein on igal pool kesta paksune ja sisepind ei ulatu prinditult üle 45 kraadi, nii et muna ja kork prinditakse ilma tugedeta.",
-    "en": "The Soma egg's shell, thread and ribs, but empty inside, with room for a small flexible animal. The wall is as thick as the shell everywhere and no inner surface overhangs more than 45 degrees as printed, so the egg and the cap print without supports."
+    "et": "Soma muna keere pikemal munal. Õmblus on kolmandiku kõrgusel, kus valge alus saab kokku punase korgiga ja korgi keerdvoldid algavad, nii et keere jääb peitu. Sees on ruumi 64 mm kõrgusele painduvale loomale, kes mahub läbi 43 mm ava ja loksub vabalt. Sein on igal pool vähemalt 1,6 mm paks ja ükski sisepind ei ulatu prinditult üle 45 kraadi, nii et alus ja kork prinditakse ilma tugedeta, kumbki oma värviga.",
+    "en": "The Soma egg's thread on a longer egg. The seam sits a third of the way up, where the white base meets the red cap and the cap's spiral flutes begin, so the thread stays hidden. Inside there is room for a 64 mm flexible animal, which passes the 43 mm opening and rattles loose. The wall is at least 1.6 mm thick everywhere and no inner surface overhangs more than 45 degrees as printed, so the base and the cap print without supports, each in its own colour."
   },
   "licence": "CC-BY-4.0",
   "credit": null,
@@ -15,13 +15,22 @@
   "published": true,
   "draft": true,
   "exports": [
-    { "id": "egg", "file": "surprise-egg.stl", "defines": { "mode": "egg", "steps": 32, "rib_slices": 24 }, "title": { "et": "Muna koos korgiga", "en": "Egg with its cap" } },
-    { "id": "base", "file": "surprise-egg-base.stl", "defines": { "mode": "base", "steps": 32, "rib_slices": 24 }, "title": { "et": "Alus", "en": "Base" } },
-    { "id": "cap", "file": "surprise-egg-cap.stl", "defines": { "mode": "cap", "steps": 32, "rib_slices": 24 }, "title": { "et": "Kork", "en": "Cap" } }
+    { "id": "egg", "file": "surprise-egg.stl", "defines": { "mode": "egg", "steps": 48, "flute_nt": 200, "flute_nz": 90 }, "title": { "et": "Muna koos korgiga", "en": "Egg with its cap" } },
+    { "id": "base", "file": "surprise-egg-base.stl", "defines": { "mode": "base", "steps": 48, "flute_nt": 200, "flute_nz": 90 }, "title": { "et": "Alus", "en": "Base" } },
+    { "id": "cap", "file": "surprise-egg-cap.stl", "defines": { "mode": "cap", "steps": 48, "flute_nt": 200, "flute_nz": 90 }, "title": { "et": "Kork", "en": "Cap" } }
   ],
   "stage_export": "egg",
-  "stage_colour": "#4b8fe0",
+  "stage_colour": "#e23a2e",
+  "stage_items": ["base", "cap"],
   "allowed_nonmanifold_edges": 0,
+  "assembly": {
+    "label": { "et": "Osad", "en": "Parts" },
+    "start": 0.3,
+    "items": [
+      { "id": "base", "export": "base", "colour": "#f5f3ee" },
+      { "id": "cap", "export": "cap", "colour": "#e23a2e", "path": [[0, 0, 0, 0], [0.5, 0, 0, 60], [1, 0, 0, 60]] }
+    ]
+  },
   "probes": {
     "variant_heading": { "et": "Muna", "en": "Egg" },
     "value_heading": { "et": "Väärtus", "en": "Value" },
@@ -33,7 +42,10 @@
       { "id": "cavity-d", "label": { "et": "Ava läbimõõt on vähemalt 40 mm", "en": "The opening is at least 40 mm across" }, "defines": { "mode": "walls" }, "expect": "value", "log_key": "cavity_d", "min": 40 },
       { "id": "min-wall", "label": { "et": "Kõige õhem sein on vähemalt 1,2 mm", "en": "The thinnest wall is at least 1.2 mm" }, "defines": { "mode": "walls" }, "expect": "value", "log_key": "min_wall", "min": 1.2 },
       { "id": "overhang", "label": { "et": "Ükski sisepind ei ulatu prinditult üle 45 kraadi", "en": "No inner surface overhangs more than 45 degrees as printed" }, "defines": { "mode": "walls" }, "expect": "value", "log_key": "overhang_margin", "min": 0 },
-      { "id": "thread", "label": { "et": "Keermel on lõtk, kork ei hõõru vastu alust", "en": "The thread has play, the cap does not rub the base" }, "defines": { "mode": "thread", "pattern": "none" }, "expect": "clear" }
+      { "id": "cavity-h", "label": { "et": "Sees on vähemalt 70 mm kõrgust", "en": "The cavity is at least 70 mm tall" }, "defines": { "mode": "walls" }, "expect": "value", "log_key": "cavity_h", "min": 70 },
+      { "id": "foot", "label": { "et": "Jala juures ei ulatu kest üle 60 kraadi", "en": "The shell overhangs at most 60 degrees at the foot" }, "defines": { "mode": "walls" }, "expect": "value", "log_key": "foot_margin", "min": 0 },
+      { "id": "cap-lean", "label": { "et": "Korgi välispind ei ulatu prinditult üle 45 kraadi", "en": "The cap's outside overhangs at most 45 degrees as printed" }, "defines": { "mode": "walls" }, "expect": "value", "log_key": "cap_lean_margin", "min": 0 },
+      { "id": "thread", "label": { "et": "Keermel on lõtk, kork ei hõõru vastu alust", "en": "The thread has play, the cap does not rub the base" }, "defines": { "mode": "thread" }, "expect": "clear" }
     ]
   }
 }
