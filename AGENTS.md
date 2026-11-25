@@ -40,12 +40,13 @@ This repo's own decisions: [docs/adr/](docs/adr/).
   `part.json` of ready STL `items`, each with an `id` and a `colour`, an optional
   `gcode` and `facts`. The modules, three.js and the data are inlined, and the replay
   records each tool's colour (`replay.py --tool-colours`). Its stage zooms with a plain wheel,
-  comes close and pans (`closeUp` in the stage config), which the room's does not. It is a private preview
+  comes close and pans (`closeUp` in the stage config); the room's wheel scrolls the page and
+  shows the stage's hint to zoom with Ctrl or Cmd. It is a private preview
   before a print (khe-meta's `k2_slice.py` writes one with every slice): it never
   enters the room or a public build, and an external part never becomes a part of
   the repo, so ADR-001 does not apply to it.
 - `node --test web/test/*.test.mjs` - the decoder, the slider, the loaders, the parts
-  view's paths, the camera fit, a `--base` build of the published parts and a
+  view's paths, the camera fit, the pinch zoom, a `--base` build of the published parts and a
   preview of an external part.
 - `npm run -s lint` - the family design check, against an empty baseline.
 - `parts/<id>/data/prep.py` - prepares a part's data from open sources, by hand, with

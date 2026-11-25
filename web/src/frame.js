@@ -60,3 +60,9 @@ export function fitPoints(cloud, azimuth, elevation, fovDeg, aspect, fill = 0.92
   };
   return { distance, lift: bisect(...lifts(distance), below), back, up };
 }
+
+// The wheel's deltaY that zooms OrbitControls by a pinch's change in scale: it multiplies a wheel with
+// Ctrl by 10 and moves the camera to 0.95 to the power of a hundredth of that per wheel event.
+export function pinchDelta(scale) {
+  return (10 * Math.log(scale)) / Math.log(0.95);
+}

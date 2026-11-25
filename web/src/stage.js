@@ -2,7 +2,7 @@
 import * as THREE from '../vendor/three/three.module.js';
 import { OrbitControls } from '../vendor/three/OrbitControls.js';
 import { pathAt, reach } from './assembly.js';
-import { corners, fitPoints } from './frame.js';
+import { corners, fitPoints, pinchDelta } from './frame.js';
 import { buildToolpaths, decodeReplay, formatDuration, layerAt, loadBytes, plateAt, rowLayout, timeline, turnedBox, verticesAt } from './replay.js';
 import { bounds, moveBy, parseStl, placeOnBed, trianglesWhere } from './stl.js';
 
@@ -26,6 +26,7 @@ const BELOW_OTHERS = Math.PI * 0.52;
 // stand one behind another and fill its height.
 const FIRST_AIM = [0.62, 0.32];
 const ALONG_ROW_AIM = [1.2, 0.45];
+const HINT_MS = 1500;
 
 function hexToRgb(hex) {
   const value = parseInt(hex.slice(1), 16);
@@ -124,6 +125,8 @@ class Stage {
     this.readout = root.querySelector('[data-stage-readout]');
     this.status = root.querySelector('[data-stage-status]');
     this.play = root.querySelector('[data-stage-play]');
+    this.hint = root.querySelector('[data-stage-hint]');
+    this.home = root.querySelector('[data-stage-home]');
     this.timeline = root.querySelector('.stage__timeline');
     this.tabs = [...root.querySelectorAll('[data-view]')];
     this.view = 'model';
@@ -283,17 +286,65 @@ class Stage {
     this.controls.enablePan = Boolean(this.config.closeUp);
     this.frameOn(this.partFrame);
     this.controls.maxPolarAngle = BELOW_OTHERS;
-    // A plain wheel scrolls the page past the stage; Ctrl or Cmd with the wheel zooms, as does a trackpad pinch, which Chrome and Firefox send with Ctrl.
-    if (!this.config.closeUp) {
-      this.canvas.parentElement.addEventListener('wheel', (event) => {
-        if (!event.ctrlKey && !event.metaKey) event.stopPropagation();
-      }, { capture: true, passive: true });
-    }
+    this.bindZoom();
+    // A move of the visitor's own offers the way back to where the view started; a click alone moves nothing.
+    let moving = false;
+    this.controls.addEventListener('start', () => { moving = true; });
+    this.controls.addEventListener('end', () => { moving = false; });
     this.controls.addEventListener('change', () => {
+      if (moving) this.home.hidden = false;
       this.showFloor();
       this.invalidate();
     });
     this.aim(...FIRST_AIM);
+  }
+
+  bindZoom() {
+    const view = this.canvas.parentElement;
+    // The wheel zooms where the pointer is, so a tall part's top comes close too. A touch pinch zooms
+    // to the middle: OrbitControls places it by page coordinates, which a scrolled page shifts.
+    this.controls.zoomToCursor = true;
+    const touches = new Set();
+    const touching = (event) => {
+      if (event.pointerType !== 'touch') return;
+      if (event.type === 'pointerdown') touches.add(event.pointerId);
+      else touches.delete(event.pointerId);
+      this.controls.zoomToCursor = !touches.size;
+    };
+    for (const type of ['pointerdown', 'pointerup', 'pointercancel']) view.addEventListener(type, touching, { capture: true });
+    // Safari sends a trackpad pinch as gesture events only, so the stage passes it on as a wheel with Ctrl,
+    // and keeps Safari's own wheel, should it send one too, from zooming twice. A pinch on a touch screen
+    // sends gesture events too, but OrbitControls zooms it from the touches already.
+    let pinching = false;
+    let scale = 1;
+    const pinch = (event) => {
+      event.preventDefault();
+      if (event.type === 'gesturestart') [pinching, scale] = [!touches.size, 1];
+      else if (event.type === 'gestureend') pinching = false;
+      else if (pinching && !touches.size) {
+        const deltaY = pinchDelta(event.scale / scale);
+        scale = event.scale;
+        this.canvas.dispatchEvent(new WheelEvent('wheel', { deltaY, ctrlKey: true, clientX: event.clientX, clientY: event.clientY, cancelable: true }));
+      }
+    };
+    for (const type of ['gesturestart', 'gesturechange', 'gestureend']) view.addEventListener(type, pinch);
+    // A plain wheel scrolls the page past the stage and says how to zoom: Ctrl or Cmd with the wheel,
+    // or a trackpad pinch, which Chrome and Firefox send as a wheel with Ctrl.
+    const key = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl';
+    this.hint.textContent = this.text.zoom_hint.replace('{key}', key);
+    let hide = 0;
+    view.addEventListener('wheel', (event) => {
+      if (pinching) {
+        if (event.isTrusted) event.stopPropagation();
+        return;
+      }
+      if (this.config.closeUp || event.ctrlKey || event.metaKey) return;
+      event.stopPropagation();
+      if (!event.deltaY) return;
+      this.hint.dataset.shown = 'true';
+      clearTimeout(hide);
+      hide = setTimeout(() => delete this.hint.dataset.shown, HINT_MS);
+    }, { capture: true, passive: true });
   }
 
   buildCut(whole) {
@@ -324,22 +375,27 @@ class Stage {
     this.framing = frame;
     this.controls.minDistance = frame.radius * (this.config.closeUp ? 0.2 : frame.points ? 0.6 : 1.3);
     this.controls.maxDistance = frame.radius * 6;
+    // Zooming toward the pointer moves the point the camera turns around, but never off the part.
+    this.controls.cursor.copy(frame.centre);
+    this.controls.maxTargetRadius = frame.radius;
   }
 
-  // `zoom` scales the fitted distance, so a refit keeps how far the visitor has zoomed.
-  aim(azimuth, elevation, zoom = 1) {
+  // `zoom` scales the fitted distance, so a refit keeps how far the visitor has zoomed; without it the
+  // view starts afresh.
+  aim(azimuth, elevation, zoom) {
     const { centre, radius, points } = this.framing;
     if (points) {
       // A row of plates is fitted by each plate's box and lifted to the middle of the view.
       const { distance, lift, back, up } = this.rowFit(azimuth, elevation);
       this.controls.target.copy(centre).addScaledVector(new THREE.Vector3(...up), lift);
-      this.camera.position.copy(this.controls.target).addScaledVector(new THREE.Vector3(...back), distance * zoom);
+      this.camera.position.copy(this.controls.target).addScaledVector(new THREE.Vector3(...back), distance * (zoom ?? 1));
     } else {
       const distance = (radius / Math.sin((this.camera.fov * Math.PI) / 360)) * 1.12;
       this.controls.target.copy(centre);
       this.camera.position.setFromSphericalCoords(distance, Math.PI / 2 - elevation, azimuth).add(centre);
     }
     this.controls.update();
+    if (zoom === undefined) this.home.hidden = true;
   }
 
   rowFit(azimuth, elevation) {
@@ -354,6 +410,7 @@ class Stage {
       this.apply();
     });
     this.play.addEventListener('click', () => (this.playing ? this.stopPlaying() : this.startPlaying()));
+    this.home.addEventListener('click', () => this.aim(...this.startAim()));
     new ResizeObserver(() => this.resize()).observe(this.canvas.parentElement);
     new IntersectionObserver(([entry]) => {
       this.visible = entry.isIntersecting;
@@ -385,6 +442,10 @@ class Stage {
     return this.framing.points && this.camera.aspect < 1 ? ALONG_ROW_AIM : FIRST_AIM;
   }
 
+  startAim() {
+    return this.view === 'cut' ? [1.15, this.size[2] < 80 ? 0.55 : 0.2] : this.firstAim();
+  }
+
   async setView(view) {
     this.stopPlaying();
     this.view = view;
@@ -400,7 +461,7 @@ class Stage {
       this.aim(...this.firstAim());
     };
     if (view !== 'parts' && view !== 'plate') reframe();
-    if (view === 'cut') this.aim(1.15, this.size[2] < 80 ? 0.55 : 0.2);
+    if (view === 'cut') this.aim(...this.startAim());
     // The print, parts and plate views load their data when first opened.
     const loader = { print: !this.printPlates && 'loadPaths', parts: !this.items && 'loadItems', plate: !this.batch && 'loadBatch' }[view];
     if (loader) {

@@ -175,6 +175,25 @@ h2 { margin: 0 0 12px; font-size: 22px; line-height: 1.25; }
 .stage__noscript { inset-block-start: 16px; }
 .stage__status { inset-block-end: 12px; }
 .stage__fallback { display: none; }
+/* Over the part while a plain wheel scrolls the page past it, saying how to zoom instead. */
+.stage__hint {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 16px;
+  background: rgb(18 20 22 / 0.55);
+  color: #e6eaec;
+  font: 600 18px/1.3 var(--sans);
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+}
+.stage__hint[data-shown] { opacity: 1; }
+@media (prefers-reduced-motion: no-preference) {
+  .stage__hint { transition: opacity 0.25s; }
+}
 .stage[data-nowebgl] .stage__view { height: auto; min-height: 0; aspect-ratio: auto; padding: 16px; }
 .stage[data-nowebgl] .stage__canvas { display: none; }
 .stage[data-nowebgl] .stage__fallback { position: static; display: block; }
@@ -189,7 +208,7 @@ h2 { margin: 0 0 12px; font-size: 22px; line-height: 1.25; }
 .stage__tabs { display: flex; gap: 6px; }
 .hero__stage .stage__view { width: 100%; height: auto; min-height: 0; aspect-ratio: 16 / 10; }
 .hero__stage .stage__controls { width: 100%; padding-block-end: 0; }
-.stage__tab, .stage__play {
+.stage__tab, .stage__play, .stage__home {
   min-height: 44px;
   padding-inline: 16px;
   border: 1px solid #3c474d;
@@ -198,6 +217,13 @@ h2 { margin: 0 0 12px; font-size: 22px; line-height: 1.25; }
   color: #e6eaec;
   font: 600 14px/1 var(--sans);
   cursor: pointer;
+}
+.stage__home {
+  position: absolute;
+  inset-block-start: 12px;
+  inset-inline-end: 12px;
+  border-color: transparent;
+  background: rgb(18 20 22 / 0.78);
 }
 .stage__tab { flex: 1 1 0; }
 .stage__tab[aria-pressed="true"] { border-color: #e6eaec; background: #e6eaec; color: #14181b; }

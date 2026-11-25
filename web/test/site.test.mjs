@@ -51,14 +51,16 @@ test('a --base build links pages and data root-relative, data with a version', (
     const page = readFileSync(join(out, name), 'utf8');
     const urls = [...page.matchAll(PAGE_URL)].map((match) => match[1].replaceAll('&amp;', '&'));
     for (const [, config] of page.matchAll(STAGE_CONFIG)) {
-      const { stl, plates, closeUp } = JSON.parse(config);
+      const { stl, plates, closeUp, text } = JSON.parse(config);
       assert.equal(closeUp, undefined, `${name}: the room's wheel scrolls past its stage`);
+      assert.match(text.zoom_hint, /\{key\}/, `${name}: the hint names the key to zoom with`);
       urls.push(stl, ...plates.flatMap((plate) => [plate.replay, ...(plate.inlay ? [plate.inlay.stl] : [])]));
     }
     for (const url of urls.filter((item) => !/^(?:https:|#)/.test(item))) {
       assert.ok(resolves(url), `${name} links ${url}, which the build did not write`);
       if (/\.(?:stl|gz)(?:\?|$)/.test(url)) assert.match(url, /\?v=[0-9a-f]{10}$/, `${name}: ${url} has no version`);
     }
+    if (page.includes('data-stage-config')) assert.ok(page.includes('data-stage-hint') && page.includes('data-stage-home'), `${name}: the stage has its zoom hint and way back`);
     assert.equal((page.match(/<link rel="alternate" hreflang="(?:et|en)"/g) ?? []).length, 2, name);
     assert.ok(!page.includes('room__lang'), `${name} has its own language link`);
   }

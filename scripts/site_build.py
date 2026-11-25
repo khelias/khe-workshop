@@ -61,7 +61,7 @@ TEXT = {
                   "print": "{time}, kiht {layer}/{layers}",
                   "print_plates": "{time} / {total}, plaat {plate}/{plates}, kiht {layer}/{layers}",
                   "plate_mark": "Järgmine plaat", "colour_change": "Värvivahetus",
-                  "apart": "Lahti võetud {pct}%",
+                  "apart": "Lahti võetud {pct}%", "zoom_hint": "Suurendamiseks hoia {key} all ja keri", "home": "Algvaade",
                   "batch": "{n} poolt", "batch_sliced": "{n} poolt, {time}, {changes} värvivahetust",
                   "slider": {"model": "Pööra detaili", "cut": "Liiguta lõiget", "print": "Keri prinditööd", "parts": "Võta osadeks",
                              "plate": "Mune plaadil"}},
@@ -92,7 +92,7 @@ TEXT = {
                   "print": "{time}, layer {layer} of {layers}",
                   "print_plates": "{time} of {total}, plate {plate}/{plates}, layer {layer}/{layers}",
                   "plate_mark": "Next plate", "colour_change": "Colour change",
-                  "apart": "{pct}% apart",
+                  "apart": "{pct}% apart", "zoom_hint": "Hold {key} and scroll to zoom", "home": "Reset view",
                   "batch": "{n} halves", "batch_sliced": "{n} halves, {time}, {changes} colour changes",
                   "slider": {"model": "Turn the part", "cut": "Move the cut", "print": "Scrub through the print", "parts": "Take the part apart",
                              "plate": "Eggs on the plate"}},
@@ -181,7 +181,8 @@ def photo_name(part: dict) -> str | None:
 
 
 class Site:
-    # A page that is only its stage zooms with a plain wheel and comes close; the room's wheel scrolls past it.
+    # A page that is only its stage zooms with a plain wheel and comes close; the room's wheel scrolls past it
+    # and shows how to zoom.
     close_up = False
 
     def __init__(self, out: Path, preview: bool, base: str | None = None) -> None:
@@ -417,6 +418,8 @@ class Site:
 <div class="stage__fallback">{self.photo(part, lang, depth)}<p>{t['nowebgl']}</p></div>
 <noscript><p class="stage__noscript">{t['nowebgl']}</p></noscript>
 <p class="stage__status" data-stage-status role="status" hidden></p>
+<p class="stage__hint" data-stage-hint aria-hidden="true"></p>
+<button type="button" class="stage__home" data-stage-home hidden>{t['stage']['home']}</button>
 </div>
 <div class="stage__controls">
 <div class="stage__tabs" role="group" aria-label="{t['views']}">{tabs}</div>
