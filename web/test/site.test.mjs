@@ -51,7 +51,8 @@ test('a --base build links pages and data root-relative, data with a version', (
     const page = readFileSync(join(out, name), 'utf8');
     const urls = [...page.matchAll(PAGE_URL)].map((match) => match[1].replaceAll('&amp;', '&'));
     for (const [, config] of page.matchAll(STAGE_CONFIG)) {
-      const { stl, plates } = JSON.parse(config);
+      const { stl, plates, closeUp } = JSON.parse(config);
+      assert.equal(closeUp, undefined, `${name}: the room's wheel scrolls past its stage`);
       urls.push(stl, ...plates.flatMap((plate) => [plate.replay, ...(plate.inlay ? [plate.inlay.stl] : [])]));
     }
     for (const url of urls.filter((item) => !/^(?:https:|#)/.test(item))) {

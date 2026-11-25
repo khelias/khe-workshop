@@ -181,6 +181,9 @@ def photo_name(part: dict) -> str | None:
 
 
 class Site:
+    # A page that is only its stage zooms with a plain wheel and comes close; the room's wheel scrolls past it.
+    close_up = False
+
     def __init__(self, out: Path, preview: bool, base: str | None = None) -> None:
         self.out = out
         self.base = base
@@ -384,6 +387,8 @@ class Site:
         }
         if part.get("stage_colour"):
             config["colour"] = part["stage_colour"]
+        if self.close_up:
+            config["closeUp"] = True
         if initial != "model":
             config["initial"] = initial
         views = [(view, t[view]) for view in (("model", "cut", "print") if plates else ("model", "cut"))]

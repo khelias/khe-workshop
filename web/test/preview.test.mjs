@@ -68,6 +68,7 @@ test('the stage shows both items in their colours, the whole model and the repla
   assert.deepEqual(config.assembly.items.map((item) => [item.stl, item.colour]), [['preview:body.stl', '#ffffff'], ['preview:top.stl', '#c0201c']]);
   assert.deepEqual(config.stageItems, [0, 1]);
   assert.equal(config.stl, 'preview:whole.stl');
+  assert.equal(config.closeUp, true, 'the preview zooms with the wheel and comes close');
   assert.equal(config.plates[0].replay, 'preview:replay.bin.gz');
   const files = json('type="application/json" data-preview-files');
   assert.deepEqual(files.whole, ['body.stl', 'top.stl']);

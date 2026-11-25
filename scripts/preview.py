@@ -81,6 +81,8 @@ class Refused(Exception):
 class PreviewSite(site_build.Site):
     """The room's stage for one external part, its data named for the boot script to fill in."""
 
+    close_up = True
+
     def __init__(self) -> None:
         self.out, self.base, self.parts = None, None, []
 

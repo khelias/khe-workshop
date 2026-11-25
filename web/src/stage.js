@@ -280,13 +280,15 @@ class Stage {
     this.partFrame = { centre: new THREE.Vector3(0, this.size[2] / 2, 0), radius: Math.hypot(...this.size) / 2 };
     this.camera = new THREE.PerspectiveCamera(24, 1, 1, 4000);
     this.controls = new OrbitControls(this.camera, this.canvas);
-    this.controls.enablePan = false;
+    this.controls.enablePan = Boolean(this.config.closeUp);
     this.frameOn(this.partFrame);
     this.controls.maxPolarAngle = BELOW_OTHERS;
     // A plain wheel scrolls the page past the stage; Ctrl or Cmd with the wheel zooms, as does a trackpad pinch, which Chrome and Firefox send with Ctrl.
-    this.canvas.parentElement.addEventListener('wheel', (event) => {
-      if (!event.ctrlKey && !event.metaKey) event.stopPropagation();
-    }, { capture: true, passive: true });
+    if (!this.config.closeUp) {
+      this.canvas.parentElement.addEventListener('wheel', (event) => {
+        if (!event.ctrlKey && !event.metaKey) event.stopPropagation();
+      }, { capture: true, passive: true });
+    }
     this.controls.addEventListener('change', () => {
       this.showFloor();
       this.invalidate();
@@ -320,7 +322,7 @@ class Stage {
   // What the camera keeps in view: the part, or in the parts view the items spread apart.
   frameOn(frame) {
     this.framing = frame;
-    this.controls.minDistance = frame.radius * (frame.points ? 0.6 : 1.3);
+    this.controls.minDistance = frame.radius * (this.config.closeUp ? 0.2 : frame.points ? 0.6 : 1.3);
     this.controls.maxDistance = frame.radius * 6;
   }
 
