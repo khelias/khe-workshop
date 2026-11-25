@@ -110,6 +110,21 @@ test('a replay can start above layer 1, leaving the layers below out', async () 
   assert.equal(meta.layers[0][1], 0);
 });
 
+test('with tool colours each extrusion keeps its tool and is drawn in its colour', async () => {
+  const replay = await decodeReplay(encodeSample(4, STAMPED, ['--tool-colours']));
+  assert.deepEqual(replay.meta.tool_colours, ['#FFFFFF', '#C0201C']);
+  const drawn = [...replay.kinds.keys()].filter((i) => replay.kinds[i]);
+  assert.ok(drawn.every((i) => replay.kinds[i] === 1), 'the kinds are the walls, without the tool bits');
+  assert.deepEqual(drawn.map((i) => replay.tools[i]), [0, 1, 1, 0, 1, 1]);
+  const { all } = buildToolpaths(replay, 0, (kind, colour) => (colour === '#C0201C' ? [200, 0, 0] : [0, 0, 200]));
+  const reds = [];
+  for (let at = 0; at < all.colours.length; at += 6) reds.push(all.colours[at] > 0);
+  // A segment ends at its record, so the first record, where the head starts, draws none.
+  assert.deepEqual(reds, [true, true, false, true, true]);
+  const plain = await decodeReplay(encodeSample(4, STAMPED));
+  assert.equal(plain.tools, null);
+});
+
 test('toolpaths are centred on the walls and turned as printed', async () => {
   const replay = await decodeReplay(encodeSample(2));
   const { all, outer } = buildToolpaths(replay, 90, () => [255, 255, 255]);

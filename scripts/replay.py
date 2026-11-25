@@ -5,6 +5,8 @@ The file is gzip over: magic, a u32 metadata length, JSON metadata, then one col
 each of record kinds, dx low bytes, dx high bytes, dy low bytes and dy high bytes.
 A record moves the head by (dx, dy) in units of 1/scale mm. Kind 0 is a travel move;
 any other kind is an extrusion of the feature kinds[kind - 1]. Deltas are zigzag coded.
+With tool colours (metadata tool_colours, for the private preview of a slice) an extrusion's kind
+byte also holds its tool in the high four bits, and tool_colours[tool] is that tool's colour.
 """
 from __future__ import annotations
 
@@ -34,6 +36,7 @@ FEATURES = {
 }
 KINDS = ["outer-wall", "inner-wall", "infill", "solid", "gap", "bridge", "support", "brim", "other"]
 WALL_KIND = KINDS.index("outer-wall") + 1
+KIND_MASK = 15  # the low bits of a kind byte; with tool colours the tool is above them
 OTHER_KIND = KINDS.index("other") + 1
 MOVES = {"G0", "G1", "G2", "G3"}
 _REMAINING = re.compile(r"\bR(\d+)")
@@ -72,6 +75,8 @@ def read_replay(path: Path) -> tuple[dict, bytes, list[float], list[float]]:
     meta = json.loads(body[len(MAGIC) + 4:start])
     count = meta["records"]
     kinds, dx_low, dx_high, dy_low, dy_high = (body[start + count * n:start + count * (n + 1)] for n in range(5))
+    if meta.get("tool_colours"):
+        kinds = bytes(kind & KIND_MASK for kind in kinds)
     xs: list[float] = []
     ys: list[float] = []
     x = y = 0
@@ -172,9 +177,11 @@ def layer_span(settings: dict) -> tuple[int, int]:
     return settings.get("first_layer", 1), settings["last_layer"]
 
 
-def parse(text: str, last_layer: int, first_layer: int = 1, tolerance: float = TOLERANCE) -> tuple[dict, Records]:
+def parse(text: str, last_layer: int, first_layer: int = 1, tolerance: float = TOLERANCE,
+          tool_colours: bool = False) -> tuple[dict, Records]:
     """Layers first_layer to last_layer. Layers below first_layer are followed but not recorded;
-    with first_layer above 1 the metadata says where the replay starts and what lay below it."""
+    with first_layer above 1 the metadata says where the replay starts and what lay below it.
+    With tool_colours each extrusion records its tool, so a viewer draws it in that tool's colour."""
     records = Records(tolerance)
     estimate = _ESTIMATE.search(text)
     total_seconds = duration_seconds(estimate.group(1)) if estimate else 0.0
@@ -269,12 +276,15 @@ def parse(text: str, last_layer: int, first_layer: int = 1, tolerance: float = T
         if cut_below and extruding and start_tool is None:
             start_tool = tool
         move_kind = kind if extruding else 0
+        if tool_colours and extruding and tool > KIND_MASK:
+            raise SystemExit(f"FAIL: tool T{tool} is above T{KIND_MASK}, which a kind byte cannot hold")
+        recorded = move_kind | tool << 4 if tool_colours and extruding else move_kind
         if code in ("G2", "G3"):
             points = arc_points(x, y, nx, ny, float(words.get("I", 0)), float(words.get("J", 0)), code == "G2")
         else:
             points = [(nx, ny)]
         for px, py in points:
-            records.add(move_kind, px, py)
+            records.add(recorded, px, py)
             if move_kind == WALL_KIND:
                 low_x, low_y = min(low_x, px), min(low_y, py)
                 high_x, high_y = max(high_x, px), max(high_y, py)
@@ -299,6 +309,8 @@ def parse(text: str, last_layer: int, first_layer: int = 1, tolerance: float = T
         "colour_changes": changes,
         "walls": [round(low_x, 2), round(low_y, 2), round(high_x, 2), round(high_y, 2)],
     }
+    if tool_colours:
+        meta["tool_colours"] = colours
     if cut_below:
         colour = meta["colour"]
         meta["first_layer"] = first_layer
@@ -336,6 +348,7 @@ def main() -> int:
     parser.add_argument("--first-layer", type=int)
     parser.add_argument("--tolerance", type=float, help="how far, in 1/100 mm, a merged run may bend")
     parser.add_argument("--out", type=Path)
+    parser.add_argument("--tool-colours", action="store_true", help="record each extrusion's tool, for a preview in its colours")
     args = parser.parse_args()
     first_layer, last_layer, tolerance, out = args.first_layer, args.last_layer, args.tolerance, args.out
     if args.part:
@@ -364,7 +377,8 @@ def main() -> int:
     tolerance = TOLERANCE if tolerance is None else tolerance
     if not 1 <= first_layer <= last_layer:
         parser.error("--first-layer is between 1 and the last layer")
-    meta, records = parse(args.gcode.read_text(encoding="utf-8", errors="replace"), last_layer, first_layer, tolerance)
+    meta, records = parse(args.gcode.read_text(encoding="utf-8", errors="replace"), last_layer, first_layer, tolerance,
+                          args.tool_colours)
     data = encode(meta, records)
     if len(data) > BUDGET:
         print(f"FAIL: replay is {len(data)} bytes, the budget is {BUDGET}", file=sys.stderr)

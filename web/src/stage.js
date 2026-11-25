@@ -37,8 +37,12 @@ function isDark([r, g, b]) {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b < 60;
 }
 
-function pathPalette(rgb) {
-  const wall = isDark(rgb) ? [176, 182, 186] : rgb;
+// A replay in several tool colours keeps dark filament darker, so it still differs from the light ones.
+const DARK_WALL = [176, 182, 186];
+const DARK_TOOL_WALL = [104, 110, 116];
+
+function pathPalette(rgb, darkWall = DARK_WALL) {
+  const wall = isDark(rgb) ? darkWall : rgb;
   const dim = [92, 102, 112];
   const solid = [112, 142, 136];
   const palette = {
@@ -423,7 +427,13 @@ class Stage {
     const isPrint = this.view === 'print';
     this.printPlates = replays.map((replay, index) => {
       const plate = this.plates[index];
-      const built = buildToolpaths(replay, plate.rotate, pathPalette(hexToRgb(plate.colour)), this.lite);
+      const darkWall = new Set(replay.meta.tool_colours).size > 1 ? DARK_TOOL_WALL : DARK_WALL;
+      const palettes = new Map();
+      const paletteOf = (colour) => {
+        if (!palettes.has(colour)) palettes.set(colour, pathPalette(hexToRgb(colour), darkWall));
+        return palettes.get(colour);
+      };
+      const built = buildToolpaths(replay, plate.rotate, (kind, colour) => paletteOf(colour ?? plate.colour)(kind), this.lite);
       const group = index === this.stageIndex ? this.stageGroup : new THREE.Group();
       const full = lineObject(built.all);
       full.visible = isPrint;

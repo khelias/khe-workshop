@@ -35,8 +35,17 @@ This repo's own decisions: [docs/adr/](docs/adr/).
   link of its own, since the site header switches language. Marker comments
   (`khe:head`, `khe:header`, `khe:footer`, `khe:consent`) are where khe-sites adds
   the family shell.
+- `python3 scripts/preview.py <dir>/part.json --out <file>.html [--lang en]` - one
+  self-contained page of the room's stage for a part from outside the repo: a
+  `part.json` of ready STL `items`, each with an `id` and a `colour`, an optional
+  `gcode` and `facts`. The modules, three.js and the data are inlined, and the replay
+  records each tool's colour (`replay.py --tool-colours`). It is a private preview
+  before a print (khe-meta's `k2_slice.py` writes one with every slice): it never
+  enters the room or a public build, and an external part never becomes a part of
+  the repo, so ADR-001 does not apply to it.
 - `node --test web/test/*.test.mjs` - the decoder, the slider, the loaders, the parts
-  view's paths, the camera fit, and a `--base` build of the published parts.
+  view's paths, the camera fit, a `--base` build of the published parts and a
+  preview of an external part.
 - `npm run -s lint` - the family design check, against an empty baseline.
 - `parts/<id>/data/prep.py` - prepares a part's data from open sources, by hand, with
   the pinned `uv run` command in its docstring; never part of the check or CI

@@ -2,6 +2,8 @@
 
 const MAGIC = 'KHERPL01';
 const GZIP = [0x1f, 0x8b];
+// With tool colours a kind byte holds the tool above these bits (scripts/replay.py).
+const KIND_MASK = 15;
 
 export function kindNumber(meta, name) {
   return meta.kinds.indexOf(name) + 1;
@@ -31,7 +33,9 @@ export function parseReplay(bytes) {
   const start = metaStart + metaLength;
   if (bytes.length !== start + count * 5) throw new Error('The replay data is incomplete.');
   const column = (index) => bytes.subarray(start + count * index, start + count * (index + 1));
-  const kinds = column(0);
+  const kindBytes = column(0);
+  const kinds = meta.tool_colours ? new Uint8Array(count) : kindBytes;
+  const tools = meta.tool_colours ? new Uint8Array(count) : null;
   const [dxLow, dxHigh, dyLow, dyHigh] = [column(1), column(2), column(3), column(4)];
   const xs = new Float32Array(count);
   const ys = new Float32Array(count);
@@ -44,8 +48,12 @@ export function parseReplay(bytes) {
     y += (dy >>> 1) ^ -(dy & 1);
     xs[i] = x / meta.scale;
     ys[i] = y / meta.scale;
+    if (tools) {
+      kinds[i] = kindBytes[i] & KIND_MASK;
+      tools[i] = kindBytes[i] >> 4;
+    }
   }
-  return { meta, kinds, xs, ys };
+  return { meta, kinds, tools, xs, ys };
 }
 
 export async function decodeReplay(bytes) {
@@ -53,9 +61,10 @@ export async function decodeReplay(bytes) {
 }
 
 // Line segments in the model's frame: the walls' centre lands on the origin, turned as printed.
-// The outer walls alone are built only when asked, for phones.
+// The outer walls alone are built only when asked, for phones. colourOf(kind, toolColour) gets the
+// colour of the tool that printed the segment when the replay carries tool colours.
 export function buildToolpaths(replay, rotateDeg, colourOf, withOuter = true) {
-  const { meta, kinds, xs, ys } = replay;
+  const { meta, kinds, tools, xs, ys } = replay;
   const [minX, minY, maxX, maxY] = meta.walls;
   const centreX = (minX + maxX) / 2;
   const centreY = (minY + maxY) / 2;
@@ -63,7 +72,7 @@ export function buildToolpaths(replay, rotateDeg, colourOf, withOuter = true) {
   const cos = Math.cos(angle);
   const sin = Math.sin(angle);
   const wallKind = kindNumber(meta, 'outer-wall');
-  const rgbOfKind = [null, ...meta.kinds.map((name) => colourOf(name))];
+  const rgbOfTool = (meta.tool_colours ?? [undefined]).map((colour) => [null, ...meta.kinds.map((name) => colourOf(name, colour))]);
   const bounds = [...meta.layers.map((layer) => layer[1]), meta.records];
   let drawn = 0;
   let walls = 0;
@@ -103,7 +112,7 @@ export function buildToolpaths(replay, rotateDeg, colourOf, withOuter = true) {
       const length = Math.sqrt((x1 - x0) ** 2 + (y1 - y0) ** 2) || 1;
       // A wall's outward direction is across its travel, which gives lines a sense of light.
       const shade = 0.4 + 0.6 * Math.abs(((y1 - y0) * 0.6 + (x1 - x0) * 0.8) / length);
-      const rgb = rgbOfKind[kind];
+      const rgb = rgbOfTool[tools ? Math.min(tools[i], rgbOfTool.length - 1) : 0][kind];
       put(all, vertex, x0, y0, x1, y1, z, rgb, shade);
       vertex += 2;
       if (withOuter && kind === wallKind) {
