@@ -1,0 +1,38 @@
+{
+  "id": "surprise-egg",
+  "title": { "et": "Üllatusmuna", "en": "Surprise egg" },
+  "summary": {
+    "et": "Keeratava korgiga õõnes muna väikese mänguasja jaoks.",
+    "en": "A hollow screw-top egg for a small toy."
+  },
+  "story": {
+    "et": "Soma muna kest, keere ja ribid, aga sees on tühi ruum, kuhu mahub väike painduv loom. Sein on igal pool kesta paksune ja sisepind ei ulatu prinditult üle 45 kraadi, nii et muna ja kork prinditakse ilma tugedeta.",
+    "en": "The Soma egg's shell, thread and ribs, but empty inside, with room for a small flexible animal. The wall is as thick as the shell everywhere and no inner surface overhangs more than 45 degrees as printed, so the egg and the cap print without supports."
+  },
+  "licence": "CC-BY-4.0",
+  "credit": null,
+  "source": "surprise-egg.scad",
+  "published": false,
+  "exports": [
+    { "id": "egg", "file": "surprise-egg.stl", "defines": { "mode": "egg", "steps": 32, "rib_slices": 24 }, "title": { "et": "Muna koos korgiga", "en": "Egg with its cap" } },
+    { "id": "base", "file": "surprise-egg-base.stl", "defines": { "mode": "base", "steps": 32, "rib_slices": 24 }, "title": { "et": "Alus", "en": "Base" } },
+    { "id": "cap", "file": "surprise-egg-cap.stl", "defines": { "mode": "cap", "steps": 32, "rib_slices": 24 }, "title": { "et": "Kork", "en": "Cap" } }
+  ],
+  "stage_export": "egg",
+  "stage_colour": "#4b8fe0",
+  "allowed_nonmanifold_edges": 0,
+  "probes": {
+    "variant_heading": { "et": "Muna", "en": "Egg" },
+    "value_heading": { "et": "Väärtus", "en": "Value" },
+    "each": { "et": "Kontrolliti:", "en": "Checked:" },
+    "variants": [
+      { "id": "wall-1.6", "label": { "et": "Sein 1,6 mm", "en": "1.6 mm wall" }, "defines": { "wall": 1.6 } }
+    ],
+    "checks": [
+      { "id": "cavity-d", "label": { "et": "Ava läbimõõt on vähemalt 40 mm", "en": "The opening is at least 40 mm across" }, "defines": { "mode": "walls" }, "expect": "value", "log_key": "cavity_d", "min": 40 },
+      { "id": "min-wall", "label": { "et": "Kõige õhem sein on vähemalt 1,2 mm", "en": "The thinnest wall is at least 1.2 mm" }, "defines": { "mode": "walls" }, "expect": "value", "log_key": "min_wall", "min": 1.2 },
+      { "id": "overhang", "label": { "et": "Ükski sisepind ei ulatu prinditult üle 45 kraadi", "en": "No inner surface overhangs more than 45 degrees as printed" }, "defines": { "mode": "walls" }, "expect": "value", "log_key": "overhang_margin", "min": 0 },
+      { "id": "thread", "label": { "et": "Keermel on lõtk, kork ei hõõru vastu alust", "en": "The thread has play, the cap does not rub the base" }, "defines": { "mode": "thread", "pattern": "none" }, "expect": "clear" }
+    ]
+  }
+}
