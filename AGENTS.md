@@ -39,7 +39,8 @@ This repo's own decisions: [docs/adr/](docs/adr/).
   self-contained page of the room's stage for a part from outside the repo: a
   `part.json` of ready STL `items`, each with an `id` and a `colour`, an optional
   `gcode` and `facts`. The modules, three.js and the data are inlined, and the replay
-  records each tool's colour (`replay.py --tool-colours`). It is a private preview
+  records each tool's colour (`replay.py --tool-colours`). Its stage zooms with a plain wheel,
+  comes close and pans (`closeUp` in the stage config), which the room's does not. It is a private preview
   before a print (khe-meta's `k2_slice.py` writes one with every slice): it never
   enters the room or a public build, and an external part never becomes a part of
   the repo, so ADR-001 does not apply to it.
