@@ -10,7 +10,9 @@
   "schedule": [
     "every weekend"
   ],
-  "dependencyDashboard": true,
+  "dependencyDashboard": {
+    "enabled": true
+  },
   "prConcurrentLimit": 5,
   "pinDigests": true,
   "platformAutomerge": true,
