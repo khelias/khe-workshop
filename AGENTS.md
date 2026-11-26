@@ -6,7 +6,7 @@ Workspace-wide rules (push, review, docs, estate ADRs) are in [khe-workspace
 The household's 3D-printable parts as public OpenSCAD source, their checks and
 the Töökoda room. Why the repo is public and how khe-sites builds the room:
 [estate ADR-043](https://github.com/khelias/khe-architecture/blob/main/decisions/043-household-parts-are-public-source-built-into-khe-sites.md).
-This repo's own decisions: [docs/adr/](docs/adr/).
+This repo's own decisions: [docs/decisions/](docs/decisions/).
 
 ## Commands
 
@@ -51,7 +51,7 @@ This repo's own decisions: [docs/adr/](docs/adr/).
 - `npm run -s lint` - the family design check, against an empty baseline.
 - `parts/<id>/data/prep.py` - prepares a part's data from open sources, by hand, with
   the pinned `uv run` command in its docstring; never part of the check or CI
-  ([ADR-003](docs/adr/003-parts-may-carry-data-prepared-from-open-sources.md)).
+  ([ADR-003](docs/decisions/003-parts-may-carry-data-prepared-from-open-sources.md)).
 
 The scripts in `scripts/` use the Python standard library and OpenSCAD only; a part's
 `data/prep.py` may use pinned third-party packages (ADR-003).
@@ -109,7 +109,7 @@ what the room shows in their place. `stage_inlay` names an export the stage draw
 inside the stage mesh in the colour printed below the replay. `replay.tolerance`
 (1/100 mm, default 2) merges more for a replay over its budget, and an export's
 `defines` may lower `$fn` or a mesh resolution for a part over its 10 MB budget
-([ADR-001](docs/adr/001-published-parts-carry-their-proof.md)).
+([ADR-001](docs/decisions/001-published-parts-carry-their-proof.md)).
 
 A part printed on several plates lists `plates` instead of `replay`, in print order:
 each an `id`, a `title` in et and en, the replay settings above and an optional
@@ -140,14 +140,14 @@ at the pitch with as many copies as fit on the bed with their brims, which the c
 keeps inside the bed and apart, and which the room and `plate.py` both use.
 
 A part not printed yet may be published as a draft
-([ADR-002](docs/adr/002-the-print-and-its-use-are-the-proof.md) point 3):
+([ADR-002](docs/decisions/002-the-print-and-its-use-are-the-proof.md) point 3):
 `"draft": true` beside `published: true`, no `proof` or replay, and a `stage_colour`
 for its model. Its page has no Print view and carries the draft label; it leaves
 draft when the proof and replay are added and `draft` and `stage_colour` removed.
 
 To publish a part: run the check, set `published: true` and fill `proof`
 (`printed` as `YYYY-MM-DD`, `use` in et and en, an optional `photo`;
-[ADR-002](docs/adr/002-the-print-and-its-use-are-the-proof.md)), write the
+[ADR-002](docs/decisions/002-the-print-and-its-use-are-the-proof.md)), write the
 replay, run `scripts/build.py`, then run the check again.
 
 ## CI and automated writers

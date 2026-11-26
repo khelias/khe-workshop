@@ -34,7 +34,7 @@ failure that names the part and 2 when OpenSCAD is missing.
 ## More
 
 - [AGENTS.md](AGENTS.md) - commands, layout, and adding or publishing a part
-- [docs/adr/](docs/adr/) - the repo's decisions
+- [docs/decisions/](docs/decisions/) - the repo's decisions
 
 ## Licence
 
