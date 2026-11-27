@@ -18,6 +18,8 @@
   --sans: 'Familjen Grotesk', system-ui, sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   --gutter: max(16px, env(safe-area-inset-left), env(safe-area-inset-right));
+  /* The family header's row (khe-sites --khe-header-max-width, 1080px, less its 1rem gutters), so the room's left edge is the header's. */
+  --column: min(calc(1080px - 2rem), 100% - 2 * var(--gutter));
 }
 
 @media (prefers-color-scheme: dark) {
@@ -63,6 +65,8 @@ body {
 
 a { color: var(--ink); text-underline-offset: 3px; }
 a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; border-radius: 4px; }
+/* On the dark band a light-filled control's own ink is dark, so its ring takes the slider's green. */
+.band :focus-visible { outline-color: #bdd05e; }
 
 .room { padding-block: 0 64px; }
 .site-footer {
@@ -71,12 +75,12 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid 
   --khe-footer-text: var(--muted);
   --khe-footer-text-hover: var(--ink);
   --khe-footer-focus: var(--room-text);
-  width: min(1080px, 100% - 2 * var(--gutter));
+  width: var(--column);
   margin-inline: auto;
   padding: 1.25rem 0 max(2.5rem, env(safe-area-inset-bottom));
 }
 .room__lang, .room__head, .rows, .blocks, .note, .stage__view, .stage__controls {
-  width: min(1080px, 100% - 2 * var(--gutter));
+  width: var(--column);
   margin-inline: auto;
 }
 .room__lang { margin-block: 16px; text-align: end; font-size: 14px; }
@@ -97,7 +101,7 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid 
   display: grid;
   gap: 28px 48px;
   align-items: center;
-  padding-inline: max(var(--gutter), (100% - 1080px) / 2);
+  padding-inline: calc((100% - var(--column)) / 2);
 }
 .hero h1 { margin-block-end: 16px; font-size: clamp(2.6rem, 6vw, 4.4rem); line-height: 0.98; letter-spacing: -0.035em; }
 .hero__stage { min-width: 0; }
@@ -152,6 +156,7 @@ h2 { margin: 0 0 12px; font-size: 22px; line-height: 1.25; }
 .row__title { color: var(--ink); font: 500 clamp(1.5rem, 2.8vw, 2rem)/1.15 var(--sans); letter-spacing: -0.02em; }
 .row__summary { max-width: 34rem; }
 .row__fact { text-align: end; white-space: nowrap; }
+.row__link--bare { grid-template-columns: minmax(0, 1fr) auto; }
 .row__link:hover .row__title { text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; }
 
 .stage { color: #e6eaec; }
@@ -205,7 +210,8 @@ h2 { margin: 0 0 12px; font-size: 22px; line-height: 1.25; }
   gap: 12px;
   padding-block: 14px 18px;
 }
-.stage__tabs { display: flex; gap: 6px; }
+/* Up to five tabs: on a narrow phone they wrap to a second row rather than spill their labels. */
+.stage__tabs { display: flex; flex-wrap: wrap; gap: 6px; }
 .hero__stage .stage__view { width: 100%; height: auto; min-height: 0; aspect-ratio: 16 / 10; }
 .hero__stage .stage__controls { width: 100%; padding-block-end: 0; }
 .stage__tab, .stage__play, .stage__home {
@@ -248,7 +254,7 @@ h2 { margin: 0 0 12px; font-size: 22px; line-height: 1.25; }
 .photo img { display: block; width: 100%; height: auto; border-radius: 12px; }
 .table { overflow-x: auto; margin-block-end: 20px; }
 table { width: 100%; border-collapse: collapse; font-size: 15px; }
-th, td { padding: 10px 12px 10px 0; border-block-end: 1px solid var(--rule); text-align: start; vertical-align: top; }
+th, td { padding: 10px 12px 10px 0; border-block-end: 1px solid var(--rule); text-align: start; vertical-align: baseline; }
 thead th { color: var(--muted); font-size: 13px; font-weight: 500; }
 tbody th { color: var(--ink); font-weight: 500; }
 .checks, .files { margin: 0 0 12px; padding-inline-start: 18px; }
@@ -269,12 +275,15 @@ tbody th { color: var(--ink); font-weight: 500; }
   .row__link { grid-template-columns: 88px minmax(0, 1fr); gap: 8px 20px; padding-block: 24px; }
   .row__outline { grid-row: span 2; width: 88px; height: 88px; }
   .row__fact { grid-column: 2; text-align: start; white-space: normal; }
+  .row__link.row__link--bare { grid-template-columns: minmax(0, 1fr); }
+  .row__link--bare .row__fact { grid-column: 1; }
 }
 
 @media (max-width: 520px) {
   .row__link { grid-template-columns: 72px minmax(0, 1fr); column-gap: 16px; align-items: start; }
   .row__outline { width: 72px; height: 72px; }
 }
+
 
 /* The stage takes every touch, so on a touch screen it leaves room around it to scroll the page. */
 @media (max-width: 520px), (any-pointer: coarse) {

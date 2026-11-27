@@ -309,9 +309,11 @@ class Site:
                 layer_unit = t["layers_one"] if meta["total_layers"] == 1 else t["layers_many"]
                 facts = f"{meta['total_layers']} {layer_unit}, {duration(meta['print_seconds'])}"
             shown_plate = ws.stage_plate(part) or (metas[0][0] if metas else None)
-            drawing = outline(self.replay_file(part, shown_plate)) if shown_plate else '<span class="row__outline" aria-hidden="true"></span>'
+            # A draft has no print to draw, so its row has no picture column rather than an empty one.
+            drawing = outline(self.replay_file(part, shown_plate)) if shown_plate else ""
+            link_class = "row__link" if shown_plate else "row__link row__link--bare"
             rows.append(f"""<li class="row">
-<a class="row__link" href="{href}">
+<a class="{link_class}" href="{href}">
 {drawing}
 <span class="row__text">
 <span class="row__title">{esc(part['title'][lang])}</span>
@@ -502,8 +504,9 @@ class Site:
         metas = self.plate_metas(part)
         results = self.results(part)
         stage_result = next(item for item in results["exports"] if item["id"] == part["stage_export"])
-        size = " x ".join(number(value, lang) for value in stage_result["size_mm"])
-        facts = [(t["size"], f"{size} mm")]
+        # No-break spaces, so the size never wraps before its unit.
+        size = "\u00a0x\u00a0".join(number(value, lang) for value in stage_result["size_mm"])
+        facts = [(t["size"], f"{size}\u00a0mm")]
         plate_table = ""
         if len(metas) > 1:
             plate_table = self.plate_table(part, metas, lang)
