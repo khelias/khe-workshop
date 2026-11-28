@@ -504,8 +504,8 @@ class Site:
         metas = self.plate_metas(part)
         results = self.results(part)
         stage_result = next(item for item in results["exports"] if item["id"] == part["stage_export"])
-        # No-break spaces, so the size never wraps before its unit.
-        size = "\u00a0x\u00a0".join(number(value, lang) for value in stage_result["size_mm"])
+        # No-break space before each x and the unit, so the size wraps only after an x.
+        size = "\u00a0x ".join(number(value, lang) for value in stage_result["size_mm"])
         facts = [(t["size"], f"{size}\u00a0mm")]
         plate_table = ""
         if len(metas) > 1:

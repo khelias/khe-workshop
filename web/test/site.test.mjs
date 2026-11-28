@@ -141,6 +141,7 @@ test('the facts of a part on several plates have a row per plate and the total, 
   assert.match(tower, /Kokku<\/th><td><\/td><td class="fact">15 h 47 min<\/td><td class="fact">603 g<\/td>/);
   assert.match(tower, /<dt>Täide<\/dt><dd class="fact">10%, 15%<\/dd>/, 'settings that differ list each value');
   assert.match(egg, /<dt>Täide<\/dt><dd class="fact">15%<\/dd>/, 'a shared setting is listed once');
+  assert.match(tower, /<dt>Mõõdud<\/dt><dd class="fact">[\d,]+\u00a0x [\d,]+\u00a0x [\d,]+\u00a0mm<\/dd>/, 'the size wraps only after an x');
   const bowl = facts(join('yarn-bowl', 'index.html'));
   assert.doesNotMatch(bowl, /Kokku|class="swatch"/, 'a part on one plate has no plate table');
   assert.match(bowl, /<dt>Kihte<\/dt>/);
